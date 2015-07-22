@@ -592,8 +592,8 @@ class NameNodeRpcServer implements NamenodeProtocols {
       throws IOException {
     checkNNStartup();
     metrics.incrGetBlockLocations();
-    return namesystem.getBlockLocations(getClientMachine(), 
-                                        src, offset, length);
+    return namesystem.getBlockLocations(getClientMachine(),
+            src, offset, length);
   }
   
   @Override // ClientProtocol
@@ -723,6 +723,14 @@ class NameNodeRpcServer implements NamenodeProtocols {
     }
     return locatedBlock;
   }
+
+    @Override
+    public void ezcopy(String src, String dst, String holder)
+            throws AccessControlException, FileNotFoundException, NotReplicatedYetException, SafeModeException, UnresolvedLinkException, IOException {
+        checkNNStartup();
+        namesystem.ezcopy(getClientMachine(), src, dst, holder);
+        return;
+    }
 
   @Override // ClientProtocol
   public LocatedBlock getAdditionalDatanode(final String src,

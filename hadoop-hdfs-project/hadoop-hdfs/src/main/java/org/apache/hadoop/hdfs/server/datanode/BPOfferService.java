@@ -699,14 +699,14 @@ class BPOfferService {
       break;
     case DatanodeProtocol.DNA_RECOVERBLOCK:
       String who = "NameNode at " + actor.getNNSocketAddress();
-      dn.recoverBlocks(who, ((BlockRecoveryCommand)cmd).getRecoveringBlocks());
+      dn.recoverBlocks(who, ((BlockRecoveryCommand) cmd).getRecoveringBlocks());
       break;
     case DatanodeProtocol.DNA_ACCESSKEYUPDATE:
       LOG.info("DatanodeCommand action: DNA_ACCESSKEYUPDATE");
       if (dn.isBlockTokenEnabled) {
         dn.blockPoolTokenSecretManager.addKeys(
-            getBlockPoolId(), 
-            ((KeyUpdateCommand) cmd).getExportedKeys());
+                getBlockPoolId(),
+                ((KeyUpdateCommand) cmd).getExportedKeys());
       }
       break;
     case DatanodeProtocol.DNA_BALANCERBANDWIDTHUPDATE:
@@ -722,6 +722,15 @@ class BPOfferService {
         dxcs.balanceThrottler.setBandwidth(bandwidth);
       }
       break;
+      case DatanodeProtocol.DNA_EZCOPY:
+        LOG.info("DatanodeCommand action: DNA_EZCOPY");// need change to info later
+        ArrayList<ExtendedBlock> src = ((EzcopyCommand) cmd).srcList;
+        ArrayList<ExtendedBlock> dst = ((EzcopyCommand) cmd).dstList;
+        if (src.size() != dst.size()) throw new IOException("Unmatched src and dst list size in ezcopy.");
+        for (int i = 0; i < src.size(); ++i) {
+          dn.ezcopy(src.get(i), dst.get(i));
+        }
+        break;
     default:
       LOG.warn("Unknown DatanodeCommand action: " + cmd.getAction());
     }

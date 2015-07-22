@@ -714,6 +714,15 @@ message GetEditsFromTxidResponseProto {
   required EventsListProto eventsList = 1;
 }
 
+message EzcopyRequestProto {
+  required string src = 1;
+  required string dst = 2;
+  required string holder = 3;
+}
+
+message EzcopyResponseProto {
+}
+
 service ClientNamenodeProtocol {
   rpc getBlockLocations(GetBlockLocationsRequestProto)
       returns(GetBlockLocationsResponseProto);
@@ -860,4 +869,6 @@ service ClientNamenodeProtocol {
       returns(GetCurrentEditLogTxidResponseProto);
   rpc getEditsFromTxid(GetEditsFromTxidRequestProto)
       returns(GetEditsFromTxidResponseProto);
+  rpc ezcopy(EzcopyRequestProto)
+      returns(EzcopyResponseProto);
 }

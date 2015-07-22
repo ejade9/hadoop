@@ -58,6 +58,7 @@ message DatanodeCommandProto {
     UnusedUpgradeCommand = 6;
     NullDatanodeCommand = 7;
     BlockIdCommand = 8;
+    EzcopyCommand = 9;
   }
 
   required Type cmdType = 1;    // Type of the command
@@ -71,6 +72,7 @@ message DatanodeCommandProto {
   optional KeyUpdateCommandProto keyUpdateCmd = 6;
   optional RegisterCommandProto registerCmd = 7;
   optional BlockIdCommandProto blkIdCmd = 8;
+  optional EzcopyCommandProto EzcopyCmd = 9;
 }
 
 /**
@@ -100,6 +102,11 @@ message BlockCommandProto {
   repeated DatanodeInfosProto targets = 4;
   repeated StorageUuidsProto targetStorageUuids = 5;
   repeated StorageTypesProto targetStorageTypes = 6;
+}
+
+message EzcopyCommandProto {
+  repeated ExtendedBlockProto srcList = 1;
+  repeated ExtendedBlockProto dstList = 2;
 }
 
 /**

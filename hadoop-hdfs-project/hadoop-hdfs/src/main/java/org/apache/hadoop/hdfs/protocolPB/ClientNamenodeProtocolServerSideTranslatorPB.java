@@ -86,7 +86,8 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.Delete
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DeleteSnapshotRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DeleteSnapshotResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DisallowSnapshotRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DisallowSnapshotResponseProto;
+import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.EzcopyRequestProto;
+import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.EzcopyResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FinalizeUpgradeRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FinalizeUpgradeResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FsyncRequestProto;
@@ -304,6 +305,9 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   private static final CreateSymlinkResponseProto VOID_CREATESYMLINK_RESPONSE = 
   CreateSymlinkResponseProto.newBuilder().build();
 
+    private static final EzcopyResponseProto EZCOPY_RESPONSE =
+            EzcopyResponseProto.newBuilder().build();
+
   private static final UpdatePipelineResponseProto
     VOID_UPDATEPIPELINE_RESPONSE = 
   UpdatePipelineResponseProto.newBuilder().build();
@@ -363,7 +367,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
           req.getLength());
       Builder builder = GetBlockLocationsResponseProto
           .newBuilder();
-      if (b != null) {
+        if (b != null) {
         builder.setLocations(PBHelper.convert(b)).build();
       }
       return builder.build();
@@ -389,12 +393,12 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   
   @Override
   public CreateResponseProto create(RpcController controller,
-      CreateRequestProto req) throws ServiceException {
-    try {
-      HdfsFileStatus result = server.create(req.getSrc(),
-          PBHelper.convert(req.getMasked()), req.getClientName(),
-          PBHelper.convertCreateFlag(req.getCreateFlag()), req.getCreateParent(),
-          (short) req.getReplication(), req.getBlockSize(),
+                                    CreateRequestProto req) throws ServiceException {
+      try {
+          HdfsFileStatus result = server.create(req.getSrc(),
+                  PBHelper.convert(req.getMasked()), req.getClientName(),
+                  PBHelper.convertCreateFlag(req.getCreateFlag()), req.getCreateParent(),
+                  (short) req.getReplication(), req.getBlockSize(),
           PBHelper.convertCryptoProtocolVersions(
               req.getCryptoProtocolVersionList()));
 
@@ -445,7 +449,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
 
   @Override
   public SetPermissionResponseProto setPermission(RpcController controller,
-      SetPermissionRequestProto req) throws ServiceException {
+                                                  SetPermissionRequestProto req) throws ServiceException {
     try {
       server.setPermission(req.getSrc(), PBHelper.convert(req.getPermission()));
     } catch (IOException e) {
@@ -456,10 +460,10 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
 
   @Override
   public SetOwnerResponseProto setOwner(RpcController controller,
-      SetOwnerRequestProto req) throws ServiceException {
-    try {
-      server.setOwner(req.getSrc(), 
-          req.hasUsername() ? req.getUsername() : null,
+                                        SetOwnerRequestProto req) throws ServiceException {
+      try {
+          server.setOwner(req.getSrc(),
+                  req.hasUsername() ? req.getUsername() : null,
           req.hasGroupname() ? req.getGroupname() : null);
     } catch (IOException e) {
       throw new ServiceException(e);
@@ -484,16 +488,16 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       AddBlockRequestProto req) throws ServiceException {
     
     try {
-      List<DatanodeInfoProto> excl = req.getExcludeNodesList();
-      List<String> favor = req.getFavoredNodesList();
-      LocatedBlock result = server.addBlock(
-          req.getSrc(),
-          req.getClientName(),
-          req.hasPrevious() ? PBHelper.convert(req.getPrevious()) : null,
-          (excl == null || excl.size() == 0) ? null : PBHelper.convert(excl
-              .toArray(new DatanodeInfoProto[excl.size()])), req.getFileId(),
-          (favor == null || favor.size() == 0) ? null : favor
-              .toArray(new String[favor.size()]));
+        List<DatanodeInfoProto> excl = req.getExcludeNodesList();
+        List<String> favor = req.getFavoredNodesList();
+        LocatedBlock result = server.addBlock(
+                req.getSrc(),
+                req.getClientName(),
+                req.hasPrevious() ? PBHelper.convert(req.getPrevious()) : null,
+                (excl == null || excl.size() == 0) ? null : PBHelper.convert(excl
+                        .toArray(new DatanodeInfoProto[excl.size()])), req.getFileId(),
+                (favor == null || favor.size() == 0) ? null : favor
+                        .toArray(new String[favor.size()]));
       return AddBlockResponseProto.newBuilder()
           .setBlock(PBHelper.convert(result)).build();
     } catch (IOException e) {
@@ -509,14 +513,14 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       List<DatanodeInfoProto> existingList = req.getExistingsList();
       List<String> existingStorageIDsList = req.getExistingStorageUuidsList();
       List<DatanodeInfoProto> excludesList = req.getExcludesList();
-      LocatedBlock result = server.getAdditionalDatanode(req.getSrc(),
-          req.getFileId(), PBHelper.convert(req.getBlk()),
-          PBHelper.convert(existingList.toArray(
-              new DatanodeInfoProto[existingList.size()])),
-          existingStorageIDsList.toArray(
-              new String[existingStorageIDsList.size()]),
-          PBHelper.convert(excludesList.toArray(
-              new DatanodeInfoProto[excludesList.size()])), 
+        LocatedBlock result = server.getAdditionalDatanode(req.getSrc(),
+                req.getFileId(), PBHelper.convert(req.getBlk()),
+                PBHelper.convert(existingList.toArray(
+                        new DatanodeInfoProto[existingList.size()])),
+                existingStorageIDsList.toArray(
+                        new String[existingStorageIDsList.size()]),
+                PBHelper.convert(excludesList.toArray(
+                        new DatanodeInfoProto[excludesList.size()])),
           req.getNumAdditionalNodes(), req.getClientName());
       return GetAdditionalDatanodeResponseProto.newBuilder().setBlock(
           PBHelper.convert(result))
@@ -539,6 +543,16 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       throw new ServiceException(e);
     }
   }
+
+    @Override
+    public EzcopyResponseProto ezcopy(RpcController controller, EzcopyRequestProto req) throws ServiceException {
+        try {
+            server.ezcopy(req.getSrc(), req.getDst(), req.getHolder());
+            return EZCOPY_RESPONSE;
+        } catch (IOException e) {
+            throw new ServiceException(e);
+        }
+    }
   
   @Override
   public ReportBadBlocksResponseProto reportBadBlocks(RpcController controller,

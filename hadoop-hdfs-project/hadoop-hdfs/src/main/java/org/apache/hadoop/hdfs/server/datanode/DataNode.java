@@ -2829,6 +2829,21 @@ public class DataNode extends ReconfigurableBase
         newBlock.getGenerationStamp(), newBlock.getNumBytes(), true, false,
         datanodes, storages);
   }
+
+    public void ezcopy(ExtendedBlock src, ExtendedBlock dst) throws IOException{
+        dst.setNumBytes(src.getNumBytes());
+        getFSDataset().ezcopy(src, dst);
+        FsVolumeSpi v = getFSDataset().getVolume(dst);
+
+        metrics.incrBlocksWritten();
+        BPOfferService bpos = blockPoolManager.get(dst.getBlockPoolId());
+        if (bpos != null) {
+            bpos.notifyNamenodeReceivedBlock(dst, DataNode.EMPTY_DEL_HINT, v.getStorageID());
+        } else {
+            LOG.warn("Cannot find BPOfferService for reporting block received for bpid="
+                    + dst.getBlockPoolId());
+        }
+    }
   
   private static void logRecoverBlock(String who, RecoveringBlock rb) {
     ExtendedBlock block = rb.getBlock();

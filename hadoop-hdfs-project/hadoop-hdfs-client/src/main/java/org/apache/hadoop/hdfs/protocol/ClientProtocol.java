@@ -433,7 +433,11 @@ public interface ClientProtocol {
   @Idempotent
   void reportBadBlocks(LocatedBlock[] blocks) throws IOException;
 
-  ///////////////////////////////////////
+    @Idempotent
+    void ezcopy(String src, String dst, String clientName) throws IOException;
+
+
+    ///////////////////////////////////////
   // Namespace management
   ///////////////////////////////////////
   /**

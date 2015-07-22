@@ -95,6 +95,7 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.Create
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DeleteRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DeleteSnapshotRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DisallowSnapshotRequestProto;
+import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.EzcopyRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FinalizeUpgradeRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FsyncRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.GetAdditionalDatanodeRequestProto;
@@ -301,6 +302,16 @@ public class ClientNamenodeProtocolTranslatorPB implements
 
   }
 
+    @Override
+    public void ezcopy(String src, String dst, String holder) throws IOException {
+        EzcopyRequestProto req =EzcopyRequestProto.newBuilder().setSrc(src).setDst(dst).setHolder(holder).build();
+        try {
+            rpcProxy.ezcopy(null, req);
+        } catch (ServiceException e) {
+            throw ProtobufHelper.getRemoteException(e);
+        }
+    }
+    
   @Override
   public boolean truncate(String src, long newLength, String clientName)
       throws IOException, UnresolvedLinkException {
@@ -316,8 +327,8 @@ public class ClientNamenodeProtocolTranslatorPB implements
     }
   }
 
-  @Override
-  public LastBlockWithStatus append(String src, String clientName,
+    @Override
+    public LastBlockWithStatus append(String src, String clientName,
       EnumSetWritable<CreateFlag> flag) throws AccessControlException,
       DSQuotaExceededException, FileNotFoundException, SafeModeException,
       UnresolvedLinkException, IOException {
@@ -348,7 +359,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
     try {
       return rpcProxy.setReplication(null, req).getResult();
     } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
+        throw ProtobufHelper.getRemoteException(e);
     }
   }
 
@@ -369,7 +380,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
 
   @Override
   public void setOwner(String src, String username, String groupname)
-      throws AccessControlException, FileNotFoundException, SafeModeException,
+          throws AccessControlException, FileNotFoundException, SafeModeException,
       UnresolvedLinkException, IOException {
     SetOwnerRequestProto.Builder req = SetOwnerRequestProto.newBuilder()
         .setSrc(src);
@@ -400,13 +411,13 @@ public class ClientNamenodeProtocolTranslatorPB implements
   
   @Override
   public LocatedBlock addBlock(String src, String clientName,
-      ExtendedBlock previous, DatanodeInfo[] excludeNodes, long fileId,
+                               ExtendedBlock previous, DatanodeInfo[] excludeNodes, long fileId,
       String[] favoredNodes)
       throws AccessControlException, FileNotFoundException,
       NotReplicatedYetException, SafeModeException, UnresolvedLinkException,
       IOException {
     AddBlockRequestProto.Builder req = AddBlockRequestProto.newBuilder()
-        .setSrc(src).setClientName(clientName).setFileId(fileId);
+            .setSrc(src).setClientName(clientName).setFileId(fileId);
     if (previous != null) 
       req.setPrevious(PBHelper.convert(previous)); 
     if (excludeNodes != null) 
@@ -429,11 +440,11 @@ public class ClientNamenodeProtocolTranslatorPB implements
       FileNotFoundException, SafeModeException, UnresolvedLinkException,
       IOException {
     GetAdditionalDatanodeRequestProto req = GetAdditionalDatanodeRequestProto
-        .newBuilder()
+            .newBuilder()
         .setSrc(src)
-        .setFileId(fileId)
-        .setBlk(PBHelper.convert(blk))
-        .addAllExistings(PBHelper.convert(existings))
+            .setFileId(fileId)
+            .setBlk(PBHelper.convert(blk))
+            .addAllExistings(PBHelper.convert(existings))
         .addAllExistingStorageUuids(Arrays.asList(existingStorageIDs))
         .addAllExcludes(PBHelper.convert(excludes))
         .setNumAdditionalNodes(numAdditionalNodes)
@@ -458,8 +469,8 @@ public class ClientNamenodeProtocolTranslatorPB implements
         .setFileId(fileId);
     if (last != null)
       req.setLast(PBHelper.convert(last));
-    try {
-      return rpcProxy.complete(null, req.build()).getResult();
+      try {
+          return rpcProxy.complete(null, req.build()).getResult();
     } catch (ServiceException e) {
       throw ProtobufHelper.getRemoteException(e);
     }
@@ -469,7 +480,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
   public void reportBadBlocks(LocatedBlock[] blocks) throws IOException {
     ReportBadBlocksRequestProto req = ReportBadBlocksRequestProto.newBuilder()
         .addAllBlocks(Arrays.asList(PBHelper.convertLocatedBlock(blocks)))
-        .build();
+            .build();
     try {
       rpcProxy.reportBadBlocks(null, req);
     } catch (ServiceException e) {
@@ -508,7 +519,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
     Rename2RequestProto req = Rename2RequestProto.newBuilder().
         setSrc(src).
         setDst(dst).setOverwriteDest(overwrite).
-        build();
+            build();
     try {
       rpcProxy.rename2(null, req);
     } catch (ServiceException e) {
@@ -524,7 +535,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
         setTrg(trg).
         addAllSrcs(Arrays.asList(srcs)).build();
     try {
-      rpcProxy.concat(null, req);
+        rpcProxy.concat(null, req);
     } catch (ServiceException e) {
       throw ProtobufHelper.getRemoteException(e);
     }
@@ -543,7 +554,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
     }
   }
 
-  @Override
+    @Override
   public boolean mkdirs(String src, FsPermission masked, boolean createParent)
       throws AccessControlException, FileAlreadyExistsException,
       FileNotFoundException, NSQuotaExceededException,

@@ -641,4 +641,6 @@ public interface FsDatasetSpi<V extends FsVolumeSpi> extends FSDatasetMBean {
    * Confirm whether the block is deleting
    */
   boolean isDeletingBlock(String bpid, long blockId);
+
+  void ezcopy(ExtendedBlock src, ExtendedBlock dst) throws IOException;
 }

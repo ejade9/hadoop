@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import static org.apache.hadoop.util.Time.monotonicNow;
 
+import java.io.IOException;
 import java.util.*;
 
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -181,6 +182,65 @@ public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
           excludedNodes, blocksize, storagePolicy);
     }
   }
+    @Override
+    DatanodeStorageInfo[] chooseezTarget(String src,
+                                       int numOfReplicas,
+                                       Node writer,
+                                       Set<Node> excludedNodes,
+                                       long blocksize,
+                                       List<DatanodeDescriptor> favoredNodes,
+                                       BlockStoragePolicy storagePolicy) {
+        List<DatanodeStorageInfo> results = new ArrayList<>();
+        try {
+            if (favoredNodes == null || favoredNodes.size() == 0) {
+                //this should not be reached
+                throw new IOException("Unexpected case: no favored nodes in ezcopy.");
+            }
+            Set<Node> favoriteAndExcludedNodes = excludedNodes == null ?
+                    new HashSet<Node>() : new HashSet<Node>(excludedNodes);
+            final List<StorageType> requiredStorageTypes = storagePolicy
+                    .chooseStorageTypes((short)numOfReplicas);
+            final EnumMap<StorageType, Integer> storageTypes =
+                    getRequiredStorageTypes(requiredStorageTypes);
+
+            // Choose favored nodes
+            boolean avoidStaleNodes = stats != null
+                    && stats.isAvoidingStaleDataNodesForWrite();
+
+            int maxNodesAndReplicas[] = getMaxNodesPerRack(0, numOfReplicas);
+            numOfReplicas = maxNodesAndReplicas[0];
+            int maxNodesPerRack = maxNodesAndReplicas[1];
+
+            for (int i = 0; i < favoredNodes.size() && results.size() < numOfReplicas; i++) {
+                DatanodeDescriptor favoredNode = favoredNodes.get(i);
+                // Choose a single node which is local to favoredNode.
+                // 'results' is updated within chooseLocalNode
+                final DatanodeStorageInfo target = chooseezLocalStorage(favoredNode,
+                        favoriteAndExcludedNodes, blocksize, maxNodesPerRack,
+                        results, avoidStaleNodes, storageTypes);
+                if (target == null) {
+                    LOG.warn("Could not find a target for file " + src
+                            + " with favored node " + favoredNode);
+                    continue;
+                }
+            }
+
+            if (results.size() < numOfReplicas) {
+                // Not enough favored nodes, report
+                throw new NotEnoughReplicasException("Not enouth replicas in ezcopy.");
+            }
+            return results.toArray(new DatanodeStorageInfo[results.size()]);
+        } catch (NotEnoughReplicasException nr) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Failed to choose with favored nodes (=" + favoredNodes
+                        +"), disregard favored nodes hint and retry.", nr);
+                }
+            return results.toArray(new DatanodeStorageInfo[results.size()]);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return results.toArray(new DatanodeStorageInfo[results.size()]);
+    }
 
   /** This is the implementation. */
   private DatanodeStorageInfo[] chooseTarget(int numOfReplicas,
@@ -487,6 +547,35 @@ public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
     return chooseLocalRack(localMachine, excludedNodes, blocksize,
         maxNodesPerRack, results, avoidStaleNodes, storageTypes);
   }
+
+    protected DatanodeStorageInfo chooseezLocalStorage(Node localMachine, Set<Node> excludedNodes, long blocksize, int maxNodesPerRack,
+                                                       List<DatanodeStorageInfo> results, boolean avoidStaleNodes,
+                                                       EnumMap<StorageType, Integer> storageTypes) throws NotEnoughReplicasException {
+        if (localMachine == null) {
+            return chooseRandom(NodeBase.ROOT, excludedNodes, blocksize,
+                    maxNodesPerRack, results, avoidStaleNodes, storageTypes);
+        }
+        if (preferLocalNode && localMachine instanceof DatanodeDescriptor) {
+            DatanodeDescriptor localDatanode = (DatanodeDescriptor) localMachine;
+            for (Iterator<Map.Entry<StorageType, Integer>> iter = storageTypes.entrySet().iterator(); iter.hasNext(); ) {
+                Map.Entry<StorageType, Integer> entry = iter.next();
+                for (DatanodeStorageInfo localStorage : DFSUtil.shuffle(localDatanode.getStorageInfos())) {
+                    StorageType type = entry.getKey();
+                    if (addezTarget(localStorage, excludedNodes, blocksize,
+                            maxNodesPerRack, false, results, avoidStaleNodes, type) >= 0) {
+                        int num = entry.getValue();
+                        if (num == 1) {
+                            iter.remove();
+                            } else {
+                            entry.setValue(num - 1);
+                        }
+                        return localStorage;
+                    }
+                }
+            }
+        }
+        return null;
+    }
   
   /**
    * Add <i>localMachine</i> and related nodes to <i>excludedNodes</i>
@@ -739,6 +828,18 @@ public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
       return -1;
     }
   }
+
+    int addezTarget(DatanodeStorageInfo storage,
+                    Set<Node> excludedNodes,
+                    long blockSize,
+                    int maxNodesPerRack,
+                    boolean considerLoad,
+                    List<DatanodeStorageInfo> results,
+                    boolean avoidStaleNodes,
+                    StorageType storageType) {
+        results.add(storage);
+        return 1;
+    }
 
   private static void logNodeIsNotChosen(DatanodeStorageInfo storage, String reason) {
     if (LOG.isDebugEnabled()) {

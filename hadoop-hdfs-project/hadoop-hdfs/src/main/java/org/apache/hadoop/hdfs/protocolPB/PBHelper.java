@@ -112,12 +112,14 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.Rollin
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SafeModeActionProto;
 import org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.ShortCircuitShmIdProto;
 import org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.ShortCircuitShmSlotProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.BalancerBandwidthCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.BlockCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.BlockIdCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.BlockRecoveryCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.DatanodeCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.DatanodeRegistrationProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.EzcopyCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.FinalizeCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.KeyUpdateCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NNHAStatusHeartbeatProto;
@@ -189,35 +191,11 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NodeType;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.namenode.CheckpointSignature;
-import org.apache.hadoop.hdfs.server.protocol.BalancerBandwidthCommand;
-import org.apache.hadoop.hdfs.server.protocol.BlockCommand;
-import org.apache.hadoop.hdfs.server.protocol.BlockIdCommand;
-import org.apache.hadoop.hdfs.server.protocol.BlockRecoveryCommand;
+import org.apache.hadoop.hdfs.server.protocol.*;
 import org.apache.hadoop.hdfs.server.protocol.BlockRecoveryCommand.RecoveringBlock;
-import org.apache.hadoop.hdfs.server.protocol.BlockReportContext;
-import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations.BlockWithLocations;
-import org.apache.hadoop.hdfs.server.protocol.CheckpointCommand;
-import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
-import org.apache.hadoop.hdfs.server.protocol.DatanodeProtocol;
-import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
-import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage.State;
-import org.apache.hadoop.hdfs.server.protocol.DatanodeStorageReport;
-import org.apache.hadoop.hdfs.server.protocol.FinalizeCommand;
-import org.apache.hadoop.hdfs.server.protocol.JournalInfo;
-import org.apache.hadoop.hdfs.server.protocol.KeyUpdateCommand;
-import org.apache.hadoop.hdfs.server.protocol.NNHAStatusHeartbeat;
-import org.apache.hadoop.hdfs.server.protocol.NamenodeCommand;
-import org.apache.hadoop.hdfs.server.protocol.NamenodeRegistration;
-import org.apache.hadoop.hdfs.server.protocol.NamespaceInfo;
-import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo;
 import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus;
-import org.apache.hadoop.hdfs.server.protocol.RegisterCommand;
-import org.apache.hadoop.hdfs.server.protocol.RemoteEditLog;
-import org.apache.hadoop.hdfs.server.protocol.RemoteEditLogManifest;
-import org.apache.hadoop.hdfs.server.protocol.StorageReport;
-import org.apache.hadoop.hdfs.server.protocol.VolumeFailureSummary;
 import org.apache.hadoop.hdfs.shortcircuit.ShortCircuitShm.ShmId;
 import org.apache.hadoop.hdfs.shortcircuit.ShortCircuitShm.SlotId;
 import org.apache.hadoop.hdfs.util.ExactSizeInputStream;
@@ -604,6 +582,28 @@ public class PBHelper {
       setGenerationStamp(b.getGenerationStamp()).
       build();
   }
+
+    //Arrays of ExtendedBlock
+    public static ExtendedBlockProto[] convert(ExtendedBlock[] exb) {
+        if (exb == null)
+            return null;
+        final int len = exb.length;
+        ExtendedBlockProto[] result = new ExtendedBlockProto[len];
+        for (int i = 0; i < len; ++i) {
+            result[i] = convert(exb[i]);
+        }
+        return result;
+    }
+
+    public static ExtendedBlock[] convert(ExtendedBlockProto[] did) {
+        if (did == null) return null;
+        final int len = did.length;
+        ExtendedBlock[] result = new ExtendedBlock[len];
+        for (int i = 0; i < len; ++i) {
+            result[i] = convert(did[i]);
+        }
+        return result;
+    }
   
   public static RecoveringBlockProto convert(RecoveringBlock b) {
     if (b == null) {
@@ -918,6 +918,8 @@ public class PBHelper {
       return REG_CMD;
     case BlockIdCommand:
       return PBHelper.convert(proto.getBlkIdCmd());
+        case EzcopyCommand:
+            return PBHelper.convert(proto.getEzcopyCmd());
     default:
       return null;
     }
@@ -988,6 +990,17 @@ public class PBHelper {
     }
     return list;
   }
+
+    public static EzcopyCommandProto convert(EzcopyCommand cmd) {
+        EzcopyCommandProto.Builder builder = EzcopyCommandProto.newBuilder();
+        for (ExtendedBlock b : cmd.srcList) {
+            builder.addSrcList(PBHelper.convert(b));
+        }
+        for (ExtendedBlock b : cmd.dstList) {
+            builder.addDstList(PBHelper.convert(b));
+        }
+        return builder.build();
+    }
 
   public static BlockIdCommandProto convert(BlockIdCommand cmd) {
     BlockIdCommandProto.Builder builder = BlockIdCommandProto.newBuilder()
@@ -1068,6 +1081,9 @@ public class PBHelper {
       builder.setCmdType(DatanodeCommandProto.Type.BlockIdCommand).
         setBlkIdCmd(PBHelper.convert((BlockIdCommand) datanodeCommand));
       break;
+        case DatanodeProtocol.DNA_EZCOPY:
+            builder.setCmdType(DatanodeCommandProto.Type.EzcopyCommand).setEzcopyCmd(PBHelper.convert((EzcopyCommand) datanodeCommand));
+            break;
     case DatanodeProtocol.DNA_UNKNOWN: //Not expected
     default:
       builder.setCmdType(DatanodeCommandProto.Type.NullDatanodeCommand);
@@ -1094,6 +1110,18 @@ public class PBHelper {
     }
     return new BlockRecoveryCommand(recoveringBlocks);
   }
+
+    public static EzcopyCommand convert(EzcopyCommandProto EzcopyCmd) {
+        List<ExtendedBlockProto> src = EzcopyCmd.getSrcListList();
+        List<ExtendedBlockProto> dst = EzcopyCmd.getDstListList();
+        ArrayList<ExtendedBlock> srclist = new ArrayList<>(src.size());
+        for (ExtendedBlockProto ebp : src)
+            srclist.add(PBHelper.convert(ebp));
+        ArrayList<ExtendedBlock> dstlist = new ArrayList<>(dst.size());
+        for (ExtendedBlockProto ebp : dst)
+            dstlist.add(PBHelper.convert(ebp));
+        return new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, srclist, dstlist);
+    }
 
   public static BlockCommand convert(BlockCommandProto blkCmd) {
     List<BlockProto> blockProtoList = blkCmd.getBlocksList();

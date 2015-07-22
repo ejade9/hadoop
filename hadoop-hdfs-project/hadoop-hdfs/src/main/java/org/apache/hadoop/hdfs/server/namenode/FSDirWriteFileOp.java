@@ -88,7 +88,7 @@ class FSDirWriteFileOp {
 
     // update space consumed
     fsd.updateCount(iip, 0, -fileNode.getPreferredBlockSize(),
-                    fileNode.getPreferredBlockReplication(), true);
+            fileNode.getPreferredBlockReplication(), true);
     return true;
   }
 
@@ -153,6 +153,33 @@ class FSDirWriteFileOp {
           + " - expected " + bpId);
     }
   }
+
+    static ValidateAddBlockResult ezcopyvalidateAddBlock(FSNamesystem fsn, FSPermissionChecker pc,
+                                                         String src, long fileId, String clientName,
+                                                         ExtendedBlock previous, LocatedBlock[] onRetryBlock)
+            throws IOException {
+        final long blockSize;
+        final int replication;
+        final byte storagePolicyID;
+        String clientMachine;
+
+        byte[][] pathComponents = FSDirectory.getPathComponentsForReservedPath(src);
+        src = fsn.dir.resolvePath(pc, src, pathComponents);
+        FileState fileState = ezanalyzeFileState(fsn, src, fileId, clientName,
+                previous, onRetryBlock);
+        final INodeFile pendingFile = fileState.inode;
+        if (pendingFile.getBlocks().length >= fsn.maxBlocksPerFile) {
+            throw new IOException("File has reached the limit on maximum number of"
+                    + " blocks (" + DFSConfigKeys.DFS_NAMENODE_MAX_BLOCKS_PER_FILE_KEY
+                    + "): " + pendingFile.getBlocks().length + " >= "
+                    + fsn.maxBlocksPerFile);
+            }
+        blockSize = pendingFile.getPreferredBlockSize();
+        clientMachine = pendingFile.getFileUnderConstructionFeature().getClientMachine();
+        replication = pendingFile.getFileReplication();
+        storagePolicyID = pendingFile.getStoragePolicyID();
+        return new ValidateAddBlockResult(blockSize, replication, storagePolicyID, clientMachine);
+    }
 
   /**
    * Part I of getAdditionalBlock().
@@ -452,7 +479,7 @@ class FSDirWriteFileOp {
     CryptoProtocolVersion protocolVersion = fsn.chooseProtocolVersion(
         zone, supportedVersions);
     CipherSuite suite = zone.getSuite();
-    String ezKeyName = zone.getKeyName();
+      String ezKeyName = zone.getKeyName();
 
     Preconditions.checkNotNull(protocolVersion);
     Preconditions.checkNotNull(suite);
@@ -576,6 +603,38 @@ class FSDirWriteFileOp {
     }
     return newiip;
   }
+
+    private static FileState ezanalyzeFileState(FSNamesystem fsn, String src, long fileId, String clientName,
+                                                ExtendedBlock previous, LocatedBlock[] onRetryBlock)
+            throws IOException {
+        assert fsn.hasReadLock();
+
+        checkBlock(fsn, previous);
+        onRetryBlock[0] = null;
+        fsn.checkNameNodeSafeMode("Cannot add block to " + src);
+
+        // have we exceeded the configured limit of fs objects.
+        fsn.checkFsObjectLimit();
+        final INode inode;
+        final INodesInPath iip;
+        if (fileId == HdfsConstants.GRANDFATHER_INODE_ID) {
+            // Older clients may not have given us an inode ID to work with.
+            // In this case, we have to try to resolve the path and hope it
+            // hasn't changed or been deleted since the file was opened for write.
+            iip = fsn.dir.getINodesInPath4Write(src);
+            inode = iip.getLastINode();
+        } else {
+            // Newer clients pass the inode ID, so we can just get the inode
+            // directly.
+            inode = fsn.dir.getInode(fileId);
+            iip = INodesInPath.fromINode(inode);
+            if (inode != null) {
+                src = iip.getPath();
+            }
+        }
+        final INodeFile file = fsn.checkLease(src, clientName, inode, fileId);
+        return new FileState(file, src, iip);
+    }
 
   private static FileState analyzeFileState(
       FSNamesystem fsn, String src, long fileId, String clientName,

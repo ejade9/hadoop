@@ -59,7 +59,7 @@ import com.google.protobuf.Message;
 public class Sender implements DataTransferProtocol {
   private final DataOutputStream out;
 
-  /** Create a sender for DataTransferProtocol with a output stream. */
+  /** Create a sender for DataTransferProtocol with an output stream. */
   public Sender(final DataOutputStream out) {
     this.out = out;    
   }

@@ -448,4 +448,7 @@ public class ExternalDatasetImpl implements FsDatasetSpi<ExternalVolumeImpl> {
   public boolean isDeletingBlock(String bpid, long blockId) {
     return false;
   }
+
+  @Override
+  public void ezcopy(ExtendedBlock src, ExtendedBlock dst) throws IOException {}
 }

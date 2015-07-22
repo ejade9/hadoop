@@ -3103,5 +3103,20 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
     evictLazyPersistBlocks(bytesNeeded);
     return cacheManager.reserve(bytesNeeded) > 0;
   }
+
+  @Override
+  public void ezcopy(ExtendedBlock srcBlock, ExtendedBlock dstBlock) throws IOException {
+    BlockLocalPathInfo blpi = getBlockLocalPathInfo(srcBlock);
+    File src = new File(blpi.getBlockPath());
+    File srcMeta = new File(blpi.getMetaPath());
+    if (getVolume(srcBlock).getAvailable() < dstBlock.getNumBytes()) {
+      throw new DiskOutOfSpaceException("Insufficient space" + srcBlock);
+    }
+    BlockPoolSlice dstBPS = getVolume(srcBlock).getBlockPoolSlice(dstBlock.getBlockPoolId());
+    File dstBlockFile = dstBPS.ezcopy(src, srcMeta, dstBlock.getLocalBlock());
+    dstBlockFile = dstBPS.addFinalizedBlock(dstBlock.getLocalBlock(), dstBlockFile); //label
+    ReplicaInfo replicaInfo = new FinalizedReplica(dstBlock.getLocalBlock(), getVolume(srcBlock), dstBlockFile.getParentFile());
+    volumeMap.add(dstBlock.getBlockPoolId(), replicaInfo);
+  }
 }
 

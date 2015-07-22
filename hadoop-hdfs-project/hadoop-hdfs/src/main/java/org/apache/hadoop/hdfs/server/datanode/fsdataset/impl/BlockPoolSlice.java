@@ -282,7 +282,7 @@ class BlockPoolSlice {
     }
     File blockFile = FsDatasetImpl.moveBlockFiles(b, f, blockDir);
     File metaFile = FsDatasetUtil.getMetaFile(blockFile, b.getGenerationStamp());
-    dfsUsage.incDfsUsed(b.getNumBytes()+metaFile.length());
+    dfsUsage.incDfsUsed(b.getNumBytes() + metaFile.length());
     return blockFile;
   }
 
@@ -592,7 +592,7 @@ class BlockPoolSlice {
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("resolveDuplicateReplicas decide to keep " + replicaToKeep
-          + ".  Will try to delete " + replicaToDelete);
+              + ".  Will try to delete " + replicaToDelete);
     }
     return replicaToDelete;
   }
@@ -696,6 +696,21 @@ class BlockPoolSlice {
     saveDfsUsed();
     dfsUsedSaved = true;
     dfsUsage.shutdown();
+  }
+
+  public File ezcopy(File src, File srcMeta, Block dstBlock) throws IOException {
+    File dstMeta = new File(tmpDir, DatanodeUtil.getMetaName(dstBlock.getBlockName(), dstBlock.getGenerationStamp()));
+    FileInputStream inm;
+    FileOutputStream outm ;
+    inm = new FileInputStream(srcMeta);
+    outm = new FileOutputStream(dstMeta);
+    IOUtils.copyBytes(inm, outm, 128*1024, true);
+
+    File dstBlockFile = new File(tmpDir, dstBlock.getBlockName());
+    FileInputStream in = new FileInputStream(src);
+    FileOutputStream out = new FileOutputStream(dstBlockFile);
+    IOUtils.copyBytes(in, out, 128*1024, true);
+    return dstBlockFile;
   }
 
   private boolean readReplicasFromCache(ReplicaMap volumeMap,

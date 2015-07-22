@@ -27,6 +27,7 @@ function hadoop_usage
   hadoop_add_subcommand "debug" "run a Debug Admin to execute HDFS debug commands"
   hadoop_add_subcommand "dfs" "run a filesystem command on the file system"
   hadoop_add_subcommand "dfsadmin" "run a DFS admin client"
+  hadoop_add_subcommand "ezcopy" "run ezcopy from src directories to dst directory"
   hadoop_add_subcommand "fetchdt" "fetch a delegation token from the NameNode"
   hadoop_add_subcommand "fsck" "run a DFS filesystem checking utility"
   hadoop_add_subcommand "getconf" "get config values from configuration"
@@ -126,6 +127,9 @@ case ${COMMAND} in
     CLASS=org.apache.hadoop.hdfs.tools.DFSAdmin
     hadoop_debug "Appending HADOOP_CLIENT_OPTS onto HADOOP_OPTS"
     HADOOP_OPTS="${HADOOP_OPTS} ${HADOOP_CLIENT_OPTS}"
+  ;;
+  ezcopy)
+    CLASS=org.apache.hadoop.hdfs.tools.Ezcopy
   ;;
   fetchdt)
     CLASS=org.apache.hadoop.hdfs.tools.DelegationTokenFetcher

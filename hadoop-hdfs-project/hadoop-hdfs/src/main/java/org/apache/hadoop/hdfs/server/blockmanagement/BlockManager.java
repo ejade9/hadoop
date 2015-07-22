@@ -1606,6 +1606,31 @@ public class BlockManager implements BlockStatsMXBean {
     return targets;
   }
 
+  public DatanodeStorageInfo[] chooseezTarget4NewBlock(final String src,
+                                                     final int numOfReplicas, final Node client,
+                                                     final Set<Node> excludedNodes,
+                                                     final long blocksize,
+                                                     final List<String> favoredNodes,
+                                                     final byte storagePolicyID) throws IOException {
+    List<DatanodeDescriptor> favoredDatanodeDescriptors =
+            getDatanodeDescriptors(favoredNodes);
+    final BlockStoragePolicy storagePolicy = storagePolicySuite.getPolicy(storagePolicyID);
+    final DatanodeStorageInfo[] targets = blockplacement.chooseezTarget(src,
+            numOfReplicas, client, excludedNodes, blocksize,
+            favoredDatanodeDescriptors, storagePolicy);
+    if (targets.length < minReplication) {
+      throw new IOException("File " + src + " could only be replicated to "
+              + targets.length + " nodes instead of minReplication (="
+              + minReplication + ").  There are "
+              + getDatanodeManager().getNetworkTopology().getNumOfLeaves()
+              + " datanode(s) running and "
+              + (excludedNodes == null? "no": excludedNodes.size())
+              + " node(s) are excluded in this operation.");
+    }
+    return targets;
+  }
+
+
   /**
    * Get list of datanode descriptors for given list of nodes. Nodes are
    * hostaddress:port or just hostaddress.

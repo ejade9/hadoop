@@ -99,6 +99,21 @@ public abstract class BlockPlacementPolicy {
         excludedNodes, blocksize, storagePolicy);
   }
 
+    DatanodeStorageInfo[] chooseezTarget(String src,
+                                       int numOfReplicas, Node writer,
+                                       Set<Node> excludedNodes,
+                                       long blocksize,
+                                       List<DatanodeDescriptor> favoredNodes,
+                                       BlockStoragePolicy storagePolicy) {
+        // This class does not provide the functionality of placing
+        // a block in favored datanodes. The implementations of this class
+        // are expected to provide this functionality
+
+        return chooseTarget(src, numOfReplicas, writer,
+                new ArrayList<DatanodeStorageInfo>(numOfReplicas), false,
+                excludedNodes, blocksize, storagePolicy);
+    }
+
   /**
    * Verify if the block's placement meets requirement of placement policy,
    * i.e. replicas are placed on no less than minRacks racks in the system.
