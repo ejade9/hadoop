@@ -1718,7 +1718,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
         List<String> favoredNodesList = (favoredNodes == null) ? null
                 : Arrays.asList(favoredNodes);
         // choose targets for the new block to be allocated. favored nodes here act as mandatory candidate
-        targets =  getBlockManager().chooseezTarget4NewBlock(src, r.replication, clientNode,
+        targets =  getBlockManager().chooseezTarget4NewBlock(dst, r.replication, clientNode,
                 null, r.blockSize, favoredNodesList, r.storagePolicyID);
         // build up InodeFile and blockInfo
         checkOperation(OperationCategory.WRITE);
@@ -1731,7 +1731,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             // Older clients may not have given us an inode ID to work with.
             // In this case, we have to try to resolve the path and hope it
             // hasn't changed or been deleted since the file was opened for write.
-            iip = dir.getINodesInPath4Write(src);
+            iip = dir.getINodesInPath4Write(dst);
             inode = iip.getLastINode();
           } else {
             // Newer clients pass the inode ID, so we can just get the inode
@@ -1739,10 +1739,10 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             inode = dir.getInode(dstFileStatus.getFileId());
             iip = INodesInPath.fromINode(inode);
             if (inode != null) {
-              src = iip.getPath();
+              dst = iip.getPath();
             }
           }
-          final INodeFile file = checkLease(src, holder, inode, dstFileStatus.getFileId());
+          final INodeFile file = checkLease(dst, holder, inode, dstFileStatus.getFileId());
           commitOrCompleteLastBlock(file, iip,
                   ExtendedBlock.getLocalBlock(previous));
           // allocate new block, record block locations in INode.
@@ -1799,6 +1799,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       previous = destinationLocatedBlock.getBlock();
       previous.setNumBytes(srcLocatedBlock.getBlockSize());
     }
+
   }
 
   /**

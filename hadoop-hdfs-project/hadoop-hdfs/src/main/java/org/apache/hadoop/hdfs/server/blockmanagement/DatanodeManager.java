@@ -1468,7 +1468,12 @@ public class DatanodeManager {
             nodeinfo.setLastCachingDirectiveSentTimeMs(nowMs);
           }
         }
-
+          // check ezcopy
+          if (nodeinfo.ezcopySrclist.size() > 0) {
+              cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, nodeinfo.ezcopySrclist, nodeinfo.ezcopyDstlist));
+              nodeinfo.ezcopySrclist.clear();
+              nodeinfo.ezcopyDstlist.clear();
+          }
         blockManager.addKeyUpdateCommand(cmds, nodeinfo);
 
         // check for balancer bandwidth update
