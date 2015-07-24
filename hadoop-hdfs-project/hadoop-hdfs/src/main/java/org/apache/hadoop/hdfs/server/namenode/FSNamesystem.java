@@ -1763,12 +1763,13 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
                     new BlockInfoUnderConstructionContiguous(
                             newBlock,
                             fileINode.getFileReplication(),
-                            BlockUCState.UNDER_CONSTRUCTION,
+                            BlockUCState.COMMITTED,
                             targets);
             Infos = blockInfo;
             dir.getBlockManager().addBlockCollection(blockInfo, fileINode);
             fileINode.addBlock(blockInfo);
             b =  blockInfo;
+
           } finally {
             dir.writeUnlock();
           }
@@ -1779,6 +1780,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           getEditLog().logAddBlock(dst, file);
           long offset = file.computeFileSize();
           destinationLocatedBlock = FSDirWriteFileOp.makeLocatedBlock(this, newBlock, targets, offset);
+
         } finally {
           writeUnlock();
         }
@@ -1791,15 +1793,23 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
         dd.ezcopySrclist.add(srcLocatedBlock.getBlock());
         dd.ezcopyDstlist.add(destinationLocatedBlock.getBlock());
       }
-      // can't wait so long for datanode to copy all the blocks and report blockreplicated back
-      // commit the block first, if the copy failed, namenode still have chance to correct it in
-      // peridocally datanode block report
-      Infos.convertToCompleteBlock();
+      BlockInfo storedBlock;
+      if (Infos instanceof BlockInfoUnderConstruction) {
+        //refresh our copy in case the block got completed in another thread
+        storedBlock = getStoredBlock(Infos);
+      } else {
+        storedBlock = Infos;
+      }
+      BlockCollection bc = storedBlock.getBlockCollection();
+
+      storedBlock = getBlockManager().forceCompleteBlock(bc, (BlockInfoUnderConstruction)storedBlock);
+
       destinationLocatedBlock.getBlock().setNumBytes(srcLocatedBlock.getBlock().getNumBytes());
       previous = destinationLocatedBlock.getBlock();
       previous.setNumBytes(srcLocatedBlock.getBlockSize());
     }
-
+    final INodeFile file = INodeFile.valueOf(dir.getInode(dstFileStatus.getFileId()), dst);
+    file.toCompleteFile(1481);
   }
 
   /**

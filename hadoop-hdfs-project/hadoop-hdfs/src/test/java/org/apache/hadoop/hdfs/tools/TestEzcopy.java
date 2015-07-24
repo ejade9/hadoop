@@ -93,6 +93,7 @@ public class TestEzcopy {
         }
 
         assertTrue(dstDFS.isFile(dst));
+        dstDFS.getFileChecksum(dst);
     }
 
 }
