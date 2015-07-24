@@ -669,6 +669,12 @@ Release 2.8.0 - UNRELEASED
     YARN-3900. Protobuf layout of yarn_security_token causes errors in other protos
     that include it (adhoot via rkanter)
 
+    YARN-3845. Scheduler page does not render RGBA color combinations in IE11. 
+    (Contributed by Mohammad Shahid Khan)
+
+    YARN-3957. FairScheduler NPE In FairSchedulerQueueInfo causing scheduler page to 
+    return 500. (Anubhav Dhoot via kasha)
+
 Release 2.7.2 - UNRELEASED
 
   INCOMPATIBLE CHANGES
@@ -679,6 +685,9 @@ Release 2.7.2 - UNRELEASED
 
     YARN-3170. YARN architecture document needs updating. (Brahma Reddy Battula
     via ozawa)
+
+    YARN-3967. Fetch the application report from the AHS if the RM does not know about it.
+    (Mit Desai via xgong)
 
   OPTIMIZATIONS
 
@@ -860,6 +869,9 @@ Release 2.7.1 - 2015-07-06
 
     YARN-3850. NM fails to read files from full disks which can lead to
     container logs being lost and other issues (Varun Saxena via jlowe)
+
+    YARN-3969. Allow jobs to be submitted to reservation that is active 
+    but does not have any allocations. (subru via curino)
 
 Release 2.7.0 - 2015-04-20
 
