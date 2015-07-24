@@ -144,6 +144,9 @@ Release 2.8.0 - UNRELEASED
     YARN-2003. Support for Application priority : Changes in RM and Capacity 
     Scheduler. (Sunil G via wangda)
 
+    YARN-2019. Retrospect on decision of making RM crashed if any exception throw 
+    in ZKRMStateStore. (Jian He via junping_du)
+
   IMPROVEMENTS
 
     YARN-644. Basic null check is not performed on passed in arguments before
@@ -660,6 +663,11 @@ Release 2.8.0 - UNRELEASED
     (varun saxena via rohithsharmaks)
 
     YARN-3956. Fix TestNodeManagerHardwareUtils fails on Mac (Varun Vasudev via wangda)
+
+    YARN-3941. Proportional Preemption policy should try to avoid sending duplicate PREEMPT_CONTAINER event to scheduler. (Sunil G via wangda)
+
+    YARN-3900. Protobuf layout of yarn_security_token causes errors in other protos
+    that include it (adhoot via rkanter)
 
 Release 2.7.2 - UNRELEASED
 
