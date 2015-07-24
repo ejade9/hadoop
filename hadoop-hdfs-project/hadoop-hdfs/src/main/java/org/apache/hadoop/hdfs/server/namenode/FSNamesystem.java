@@ -1809,7 +1809,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       previous.setNumBytes(srcLocatedBlock.getBlockSize());
     }
     final INodeFile file = INodeFile.valueOf(dir.getInode(dstFileStatus.getFileId()), dst);
-    file.toCompleteFile(1481);
+    file.toCompleteFile(monotonicNow());
   }
 
   /**
