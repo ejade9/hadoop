@@ -1663,6 +1663,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   }
 
   public void ezcopy(String clientMachine, String src, String dst, String holder) throws IOException{
+    LOG.fatal(src + "#" + dst);
     // get source file's fileinfo and blocklocations
     FSPermissionChecker pc = getPermissionChecker();
     HdfsFileStatus srcFileStatus = getFileInfo(src, true);

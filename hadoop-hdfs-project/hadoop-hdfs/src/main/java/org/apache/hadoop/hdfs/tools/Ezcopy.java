@@ -20,8 +20,10 @@ package org.apache.hadoop.hdfs.tools;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -34,6 +36,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.hadoop.hdfs.protocol.*;
 
 public class Ezcopy {
 
@@ -41,20 +44,91 @@ public class Ezcopy {
     protected final Configuration conf;
 
     private String clientName;
+    public static int THREAD_POOL_SIZE = 5;
+    private final ExecutorService executor;
 
-    public Ezcopy(Configuration conf, DistributedFileSystem dstFileSystem) throws Exception {
+    private DistributedFileSystem srcFileSystem = null;
+    private DistributedFileSystem dstFileSystem = null;
+
+    private boolean skipUnderConstructionFile = false;
+
+    public enum CopyResult {SUCCESS, SKIP, FAIL}
+
+    public Ezcopy(Configuration conf, int threadPoolSize,
+                  boolean skipUnderConstructionFile, DistributedFileSystem srcFileSystem,
+                  DistributedFileSystem dstFileSystem) throws Exception {
         this.conf = conf;
+        this.executor = Executors.newFixedThreadPool(threadPoolSize);
+        this.skipUnderConstructionFile = skipUnderConstructionFile;
+
+        this.srcFileSystem = srcFileSystem;
+        this.dstFileSystem = dstFileSystem;
         this.clientName = dstFileSystem.getClient().getClientName();
     }
 
 
-    public void copy(List<ezcopyRequest> requests) throws Exception {
-        for (ezcopyRequest r : requests) {
-            String src = r.getSrc();
-            //check if the source path is the absolute path
+    private class ezcopyCopy implements Callable<CopyResult> {
+        private final String source;
+        private final String destination;
 
-            src = new Path(src).makeQualified(r.srcFs.getUri(), r.srcFs.getWorkingDirectory()).toUri().getPath();
-            r.srcFs.getClient().getNamenode().ezcopy(src, r.getDestination(), clientName, false);
+        private final ClientProtocol srcNamenode;
+        private final ClientProtocol dstNamenode;
+        private final DistributedFileSystem dstFs;
+        private final DistributedFileSystem srcFs;
+        private final boolean isIncluster;
+
+        public ezcopyCopy(String src, String destination,
+                          DistributedFileSystem srcFs, DistributedFileSystem dstFs) throws Exception {
+            this.srcNamenode = srcFs.getClient().getNamenode();
+            this.dstNamenode = dstFs.getClient().getNamenode();
+
+            URI srcuri = new URI(src);
+            URI dsturi = new URI(destination);
+            if (dstFs.hashCode() == srcFs.hashCode()) {
+                LOG.fatal("in cluster!");
+                isIncluster = true;
+            }
+            else
+                isIncluster = false;
+
+            // if incluster, remove the hdfs:// prefix and only use path component.
+            if (isIncluster) {
+                this.source = new Path(src).makeQualified(srcFs.getUri(), srcFs.getWorkingDirectory()).toUri().getPath();
+                this.destination = new Path(destination).makeQualified(dstFs.getUri(), dstFs.getWorkingDirectory()).toUri()
+                        .getPath();
+            }
+            else {
+                this.source = src;
+                this.destination = destination;
+            }
+            this.srcFs = srcFs;
+            this.dstFs = dstFs;
+        }
+
+        public CopyResult call() throws Exception {
+            srcNamenode.ezcopy(source, destination, dstFs.getClient().getClientName(), isIncluster);
+            return CopyResult.SUCCESS;
+        }
+
+    }
+
+    public void shutdown() throws IOException {
+        executor.shutdownNow();
+    }
+
+
+    public void copy(List<ezcopyRequest> requests) throws Exception {
+        List<Future<CopyResult>> results = new ArrayList<>();
+
+        for (ezcopyRequest r : requests) {
+            Callable<CopyResult> ezcopyCopy = new ezcopyCopy(r.getSrc(),
+                    r.getDestination(), r.srcFs, r.dstFs);
+            Future<CopyResult> f = executor.submit(ezcopyCopy);
+            results.add(f);
+        }
+
+        for (Future<CopyResult> f : results) {
+            f.get();
         }
     }
 
@@ -127,17 +201,16 @@ public class Ezcopy {
     private static Options options = new Options();
     private static Configuration defaultConf = new Configuration();
 
+
     private static void printUsage() {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("Usage : ezcopy <srcs....> <dst>", options);
+        formatter.printHelp("Usage : ezcopy [options] <srcs...> <dst>", options);
     }
 
-    private static CommandLine parseCommandline(String args[])
-            throws ParseException {
-
+    private static CommandLine parseCommandline(String args[]) throws ParseException {
+        options.addOption("t", "threads", true, "The number of concurrent theads" + " to use");
         CommandLineParser parser = new PosixParser();
         CommandLine cmd = parser.parse(options, args);
-
         return cmd;
     }
 
@@ -295,6 +368,8 @@ public class Ezcopy {
         // parse the args into srcs and dst
         CommandLine cmd = parseCommandline(args);
         args = cmd.getArgs();
+        int threadPoolSize = (cmd.hasOption('t')) ? Integer.parseInt(cmd
+                .getOptionValue('t')) : THREAD_POOL_SIZE;
 
         List<CopyPath> srcs = new ArrayList<>();
         String dst = parseFiles(srcs, args);
@@ -307,7 +382,7 @@ public class Ezcopy {
                 .getSrcPath().getFileSystem(defaultConf));
 
         List<ezcopyRequest> requests = new ArrayList<>();
-        Ezcopy ezcopy = new Ezcopy(new Configuration(), dstFileSys);
+        Ezcopy ezcopy = new Ezcopy(new Configuration(), threadPoolSize, false, srcFileSys, dstFileSys);
         try {
             for (CopyPath copyPath : srcs) {
                 Path srcPath = copyPath.getSrcPath();

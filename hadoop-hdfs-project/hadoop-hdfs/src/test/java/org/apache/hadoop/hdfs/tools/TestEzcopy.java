@@ -78,13 +78,14 @@ public class TestEzcopy {
     public void testezcopy() throws Exception {
         srcDFS.getFileChecksum(file);
 
-        Ezcopy ez = new Ezcopy(conf, dstDFS);
+        Ezcopy ez = new Ezcopy(conf, 5, false, srcDFS, dstDFS);
 
-        List<Ezcopy.ezcopyRequest> requests = new ArrayList<Ezcopy.ezcopyRequest>();
-
-
+        /*String args[] = new String[2];
+        args[0] = "/foo";
+        args[1] = "/bar";
+        ez.runTool(args);*/
+        List<Ezcopy.ezcopyRequest> requests = new ArrayList<>();
         requests.add(new Ezcopy.ezcopyRequest(file.toString(), dst.toString(), srcDFS, dstDFS));
-
         ez.copy(requests);
         try {
             Thread.sleep(5000);
@@ -93,7 +94,7 @@ public class TestEzcopy {
         }
 
         assertTrue(dstDFS.isFile(dst));
-        dstDFS.getFileChecksum(dst);
+        assertTrue(dstDFS.getFileChecksum(dst).equals(srcDFS.getFileChecksum(file)));
     }
 
 }
