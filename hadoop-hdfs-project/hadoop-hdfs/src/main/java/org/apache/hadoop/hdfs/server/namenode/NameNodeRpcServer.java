@@ -725,10 +725,11 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
     @Override
-    public void ezcopy(String src, String dst, String holder)
+    public void ezcopy(String src, String dst, String holder, boolean isIncluster)
             throws AccessControlException, FileNotFoundException, NotReplicatedYetException, SafeModeException, UnresolvedLinkException, IOException {
         checkNNStartup();
-        namesystem.ezcopy(getClientMachine(), src, dst, holder);
+        if (!isIncluster)
+            namesystem.ezcopy(getClientMachine(), src, dst, holder);
         return;
     }
 

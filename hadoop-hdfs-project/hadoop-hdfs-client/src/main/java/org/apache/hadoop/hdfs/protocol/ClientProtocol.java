@@ -459,7 +459,7 @@ public interface ClientProtocol {
   void reportBadBlocks(LocatedBlock[] blocks) throws IOException;
 
     @Idempotent
-    void ezcopy(String src, String dst, String clientName) throws IOException;
+    void ezcopy(String src, String dst, String clientName, boolean isIncluster) throws IOException;
 
 
     ///////////////////////////////////////

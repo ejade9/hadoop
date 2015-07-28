@@ -1715,8 +1715,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             clientNode = new NodeBase(rName.get(0) + NodeBase.PATH_SEPARATOR_STR + clientMachine);
           }
         }
-        List<String> favoredNodesList = (favoredNodes == null) ? null
-                : Arrays.asList(favoredNodes);
+        List<String> favoredNodesList = Arrays.asList(favoredNodes);
         // choose targets for the new block to be allocated. favored nodes here act as mandatory candidate
         targets =  getBlockManager().chooseezTarget4NewBlock(dst, r.replication, clientNode,
                 null, r.blockSize, favoredNodesList, r.storagePolicyID);
@@ -1734,8 +1733,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             iip = dir.getINodesInPath4Write(dst);
             inode = iip.getLastINode();
           } else {
-            // Newer clients pass the inode ID, so we can just get the inode
-            // directly.
+            // Newer clients pass the inode ID, so we can just get the inode directly.
             inode = dir.getInode(dstFileStatus.getFileId());
             iip = INodesInPath.fromINode(inode);
             if (inode != null) {
@@ -1802,7 +1800,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       }
       BlockCollection bc = storedBlock.getBlockCollection();
 
-      storedBlock = getBlockManager().forceCompleteBlock(bc, (BlockInfoUnderConstruction)storedBlock);
+      getBlockManager().forceCompleteBlock(bc, (BlockInfoUnderConstruction)storedBlock);
 
       destinationLocatedBlock.getBlock().setNumBytes(srcLocatedBlock.getBlock().getNumBytes());
       previous = destinationLocatedBlock.getBlock();

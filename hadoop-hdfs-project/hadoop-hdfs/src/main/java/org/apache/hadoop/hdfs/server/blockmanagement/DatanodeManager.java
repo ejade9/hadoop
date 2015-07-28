@@ -1469,8 +1469,10 @@ public class DatanodeManager {
           }
         }
           // check ezcopy
+          final int EZCOPY_THRESHOLD = 1000;
           if (nodeinfo.ezcopySrclist.size() > 0) {
-              if (nodeinfo.ezcopySrclist.size() < 1000) {
+              assert nodeinfo.ezcopyDstlist.size() == nodeinfo.ezcopySrclist.size();
+              if (nodeinfo.ezcopySrclist.size() < EZCOPY_THRESHOLD) {
                   cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, nodeinfo.ezcopySrclist, nodeinfo.ezcopyDstlist));
                   nodeinfo.ezcopySrclist.clear();
                   nodeinfo.ezcopyDstlist.clear();
@@ -1478,7 +1480,7 @@ public class DatanodeManager {
               else {
                   ArrayList<ExtendedBlock> s = new ArrayList<>();
                   ArrayList<ExtendedBlock> d = new ArrayList<>();
-                  for (int i = 0; i < 1000; ++i) {
+                  for (int i = 0; i < EZCOPY_THRESHOLD; ++i) {
                       s.add(nodeinfo.ezcopySrclist.remove(0));
                       d.add(nodeinfo.ezcopyDstlist.remove(0));
                   }

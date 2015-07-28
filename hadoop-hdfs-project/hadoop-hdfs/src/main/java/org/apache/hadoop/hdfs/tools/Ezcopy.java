@@ -52,13 +52,9 @@ public class Ezcopy {
         for (ezcopyRequest r : requests) {
             String src = r.getSrc();
             //check if the source path is the absolute path
-            if (src.startsWith("hdfs://")) {
-                src = src.substring(7);
-                while (src.charAt(0) != '/') {
-                    src = src.substring(1);
-                }
-            }
-            r.srcFs.getClient().getNamenode().ezcopy(src, r.getDestination(), clientName);
+
+            src = new Path(src).makeQualified(r.srcFs.getUri(), r.srcFs.getWorkingDirectory()).toUri().getPath();
+            r.srcFs.getClient().getNamenode().ezcopy(src, r.getDestination(), clientName, false);
         }
     }
 

@@ -718,6 +718,7 @@ message EzcopyRequestProto {
   required string src = 1;
   required string dst = 2;
   required string holder = 3;
+  required bool isin = 4;
 }
 
 message EzcopyResponseProto {

@@ -548,7 +548,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
     @Override
     public EzcopyResponseProto ezcopy(RpcController controller, EzcopyRequestProto req) throws ServiceException {
         try {
-            server.ezcopy(req.getSrc(), req.getDst(), req.getHolder());
+            server.ezcopy(req.getSrc(), req.getDst(), req.getHolder(), req.getIsin());
             return EZCOPY_RESPONSE;
         } catch (IOException e) {
             throw new ServiceException(e);

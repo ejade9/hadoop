@@ -303,8 +303,8 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
     @Override
-    public void ezcopy(String src, String dst, String holder) throws IOException {
-        EzcopyRequestProto req =EzcopyRequestProto.newBuilder().setSrc(src).setDst(dst).setHolder(holder).build();
+    public void ezcopy(String src, String dst, String holder, boolean isIncluster) throws IOException {
+        EzcopyRequestProto req =EzcopyRequestProto.newBuilder().setSrc(src).setDst(dst).setHolder(holder).setIsin(isIncluster).build();
         try {
             rpcProxy.ezcopy(null, req);
         } catch (ServiceException e) {
