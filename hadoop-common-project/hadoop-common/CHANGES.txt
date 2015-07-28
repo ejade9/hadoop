@@ -727,6 +727,11 @@ Release 2.8.0 - UNRELEASED
 
     HADOOP-12259. Utility to Dynamic port allocation (brahmareddy via rkanter)
 
+    HADOOP-12170. hadoop-common's JNIFlags.cmake is redundant and can be
+    removed (Alan Burlison via Colin P. McCabe)
+
+    HADOOP-11807. add a lint mode to releasedocmaker (ramtin via aw)
+
   OPTIMIZATIONS
 
     HADOOP-11785. Reduce the number of listStatus operation in distcp
@@ -1011,6 +1016,9 @@ Release 2.8.0 - UNRELEASED
 
     HADOOP-12239. StorageException complaining " no lease ID" when updating
     FolderLastModifiedTime in WASB. (Duo Xu via cnauroth)
+
+    HADOOP-12245. References to misspelled REMAINING_QUATA in
+    FileSystemShell.md. (Gabor Liptak via aajisaka)
 
 Release 2.7.2 - UNRELEASED
 
