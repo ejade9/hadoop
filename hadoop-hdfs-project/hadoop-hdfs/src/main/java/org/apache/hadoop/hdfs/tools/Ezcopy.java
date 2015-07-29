@@ -82,10 +82,7 @@ public class Ezcopy {
             this.srcNamenode = srcFs.getClient().getNamenode();
             this.dstNamenode = dstFs.getClient().getNamenode();
 
-            URI srcuri = new URI(src);
-            URI dsturi = new URI(destination);
-            if (dstFs.hashCode() == srcFs.hashCode()) {
-                LOG.fatal("in cluster!");
+            if (dstFs.getUri().toString().equals(srcFs.getUri().toString())) {
                 isIncluster = true;
             }
             else

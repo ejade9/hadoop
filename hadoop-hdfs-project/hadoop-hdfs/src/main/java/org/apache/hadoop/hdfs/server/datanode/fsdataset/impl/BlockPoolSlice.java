@@ -699,14 +699,14 @@ class BlockPoolSlice {
   }
 
   public File ezcopy(File src, File srcMeta, Block dstBlock) throws IOException {
-    File dstMeta = new File(tmpDir, DatanodeUtil.getMetaName(dstBlock.getBlockName(), dstBlock.getGenerationStamp()));
+    File dstMeta = new File(rbwDir, DatanodeUtil.getMetaName(dstBlock.getBlockName(), dstBlock.getGenerationStamp()));
     FileInputStream inm;
     FileOutputStream outm ;
     inm = new FileInputStream(srcMeta);
     outm = new FileOutputStream(dstMeta);
     IOUtils.copyBytes(inm, outm, 128*1024, true);
 
-    File dstBlockFile = new File(tmpDir, dstBlock.getBlockName());
+    File dstBlockFile = new File(rbwDir, dstBlock.getBlockName());
     FileInputStream in = new FileInputStream(src);
     FileOutputStream out = new FileOutputStream(dstBlockFile);
     IOUtils.copyBytes(in, out, 128*1024, true);

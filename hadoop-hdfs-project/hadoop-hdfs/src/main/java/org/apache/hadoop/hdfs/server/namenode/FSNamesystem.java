@@ -1663,7 +1663,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   }
 
   public void ezcopy(String clientMachine, String src, String dst, String holder) throws IOException{
-    LOG.fatal(src + "#" + dst);
     // get source file's fileinfo and blocklocations
     FSPermissionChecker pc = getPermissionChecker();
     HdfsFileStatus srcFileStatus = getFileInfo(src, true);
@@ -1685,6 +1684,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       String[] favoredNodes = new String[srcLocatedBlock.getLocations().length];
       for (int i = 0; i < srcLocatedBlock.getLocations().length; ++i) {
         favoredNodes[i] = srcLocatedBlock.getLocations()[i].getHostName();
+        LOG.fatal("favoredNodes" + srcLocatedBlock.getLocations()[i].toString());
       }
       waitForLoadingFSImage();
       LocatedBlock[] onRetryBlock = new LocatedBlock[1];
@@ -1720,6 +1720,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
         // choose targets for the new block to be allocated. favored nodes here act as mandatory candidate
         targets =  getBlockManager().chooseezTarget4NewBlock(dst, r.replication, clientNode,
                 null, r.blockSize, favoredNodesList, r.storagePolicyID);
+        LOG.fatal("targets: " + targets[0].toString());
         // build up InodeFile and blockInfo
         checkOperation(OperationCategory.WRITE);
         writeLock();
