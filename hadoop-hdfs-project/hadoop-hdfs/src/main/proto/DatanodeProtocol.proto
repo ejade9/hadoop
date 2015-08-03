@@ -105,8 +105,10 @@ message BlockCommandProto {
 }
 
 message EzcopyCommandProto {
-  repeated ExtendedBlockProto srcList = 1;
-  repeated ExtendedBlockProto dstList = 2;
+  repeated string srcList = 1;
+  repeated string dstList = 2;
+  repeated uint64 offset = 3;
+  repeated uint64 length = 4;
 }
 
 /**

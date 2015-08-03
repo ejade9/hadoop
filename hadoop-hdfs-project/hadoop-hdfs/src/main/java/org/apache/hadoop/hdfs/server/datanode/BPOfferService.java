@@ -24,8 +24,11 @@ import com.google.common.collect.Sets;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.ha.HAServiceProtocol.HAServiceState;
+import org.apache.hadoop.hdfs.DFSClient;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
@@ -36,6 +39,8 @@ import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStat
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -724,19 +729,44 @@ class BPOfferService {
       break;
       case DatanodeProtocol.DNA_EZCOPY:
         LOG.info("DatanodeCommand action: DNA_EZCOPY");// need change to info later
-        ArrayList<ExtendedBlock> src = ((EzcopyCommand) cmd).srcList;
-        ArrayList<ExtendedBlock> dst = ((EzcopyCommand) cmd).dstList;
+        ArrayList<String> src = ((EzcopyCommand) cmd).srcList;
+        ArrayList<String> dst = ((EzcopyCommand) cmd).dstList;
+        ArrayList<Long> off = ((EzcopyCommand) cmd).offsetList;
+        ArrayList<Long> len = ((EzcopyCommand) cmd).lengthList;
         if (src.size() != dst.size()) throw new IOException("Unmatched src and dst list size in ezcopy.");
+        Configuration defaultConf = new Configuration();
+        DFSClient srcdfs = null;
+        DFSClient dstdfs;
+        URI srcuri = (new Path(src.get(0)).getFileSystem(defaultConf)).getUri();
+        URI dsturi = (new Path(dst.get(0)).getFileSystem(defaultConf)).getUri();
+        LOG.fatal(srcuri.getAuthority() + '#' + dsturi.getAuthority());
+        if (srcuri.getAuthority() != null)
+          srcdfs = new DFSClient(srcuri, defaultConf);
+        else
+          try {
+            String dfshost = "hdfs://" + actor.nnAddr.getAddress().getHostName() + ':' + actor.nnAddr.getPort();
+            LOG.fatal(dfshost);
+            srcdfs = new DFSClient(new URI(dfshost), defaultConf);
+          } catch (URISyntaxException e) {
+            e.printStackTrace();
+          }
+        if (dsturi.getAuthority() != null)
+          dstdfs = new DFSClient(dsturi, defaultConf);
+        else
+          dstdfs = srcdfs;
         for (int i = 0; i < src.size(); ++i) {
-          dn.ezcopy(src.get(i), dst.get(i));
+          dn.ezcopy(src.get(i), dst.get(i), off.get(i), len.get(i), srcdfs, dstdfs);
         }
+        dstdfs.closeAllFilesBeingWritten(false);
+        dstdfs.close();
+        srcdfs.close();
         break;
     default:
       LOG.warn("Unknown DatanodeCommand action: " + cmd.getAction());
     }
     return true;
   }
- 
+
   /**
    * This method should handle commands from Standby namenode except
    * DNA_REGISTER which should be handled earlier itself.

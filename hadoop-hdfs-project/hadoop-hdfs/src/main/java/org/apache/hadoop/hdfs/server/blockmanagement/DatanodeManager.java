@@ -1473,18 +1473,24 @@ public class DatanodeManager {
           if (nodeinfo.ezcopySrclist.size() > 0) {
               assert nodeinfo.ezcopyDstlist.size() == nodeinfo.ezcopySrclist.size();
               if (nodeinfo.ezcopySrclist.size() < EZCOPY_THRESHOLD) {
-                  cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, nodeinfo.ezcopySrclist, nodeinfo.ezcopyDstlist));
+                  cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, nodeinfo.ezcopySrclist, nodeinfo.ezcopyDstlist, nodeinfo.ezcopyOffsetlist, nodeinfo.ezcopyLengthlist));
                   nodeinfo.ezcopySrclist.clear();
                   nodeinfo.ezcopyDstlist.clear();
+                  nodeinfo.ezcopyOffsetlist.clear();
+                  nodeinfo.ezcopyLengthlist.clear();
               }
               else {
-                  ArrayList<ExtendedBlock> s = new ArrayList<>();
-                  ArrayList<ExtendedBlock> d = new ArrayList<>();
+                  ArrayList<String> s = new ArrayList<>();
+                  ArrayList<String> d = new ArrayList<>();
+                  ArrayList<Long> o = new ArrayList<>();
+                  ArrayList<Long> l = new ArrayList<>();
                   for (int i = 0; i < EZCOPY_THRESHOLD; ++i) {
                       s.add(nodeinfo.ezcopySrclist.remove(0));
                       d.add(nodeinfo.ezcopyDstlist.remove(0));
+                      o.add(nodeinfo.ezcopyOffsetlist.remove(0));
+                      l.add(nodeinfo.ezcopyLengthlist.remove(0));
                   }
-                  cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, s, d));
+                  cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, s, d, o, l));
               }
           }
         blockManager.addKeyUpdateCommand(cmds, nodeinfo);

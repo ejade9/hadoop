@@ -1662,154 +1662,22 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     logAuditEvent(true, "setOwner", src, null, auditStat);
   }
 
+
   public void ezcopy(String clientMachine, String src, String dst, String holder) throws IOException{
     // get source file's fileinfo and blocklocations
-    FSPermissionChecker pc = getPermissionChecker();
     HdfsFileStatus srcFileStatus = getFileInfo(src, true);
     if (srcFileStatus == null) {
       throw new FileNotFoundException("File : " + src + " does not exist");
     }
-    PermissionStatus perm = new PermissionStatus(getRemoteUser().getShortUserName(), null, srcFileStatus.getPermission());
 
     LocatedBlocks srcLocatedBlks = getBlockLocations(clientMachine, src, 0, Long.MAX_VALUE);
-    EnumSetWritable<CreateFlag> flag = new EnumSetWritable<>(EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE));
-    // start the new destination file
-    HdfsFileStatus dstFileStatus = startFile(dst, perm, holder, clientMachine, flag.get(), true,
-            srcFileStatus.getReplication(), srcFileStatus.getBlockSize(), null, false);
-    // for each block in source file, allocate a new block, choose the corresponding datanodes as targets
-    ExtendedBlock previous = null;
-    LocatedBlock destinationLocatedBlock;
     for (LocatedBlock srcLocatedBlock : srcLocatedBlks.getLocatedBlocks()) {
-      BlockInfoUnderConstruction Infos = null;
-      String[] favoredNodes = new String[srcLocatedBlock.getLocations().length];
-      for (int i = 0; i < srcLocatedBlock.getLocations().length; ++i) {
-        favoredNodes[i] = srcLocatedBlock.getLocations()[i].getHostName();
-        LOG.fatal("favoredNodes" + srcLocatedBlock.getLocations()[i].toString());
-      }
-      waitForLoadingFSImage();
-      LocatedBlock[] onRetryBlock = new LocatedBlock[1];
-      FSDirWriteFileOp.ValidateAddBlockResult r;
-      checkOperation(OperationCategory.READ);
-      readLock();
-      try {
-        checkOperation(OperationCategory.READ);
-        r = FSDirWriteFileOp.ezcopyvalidateAddBlock(this, pc, dst, dstFileStatus.getFileId(), holder, previous, onRetryBlock);
-      } finally {
-        readUnlock();
-      }
-      if (r == null) {
-        assert onRetryBlock[0] != null : "Retry block is null";
-        // This is a retry. Just return the last block.
-        destinationLocatedBlock = onRetryBlock[0];
-      }
-      else {
-        DatanodeStorageInfo[] targets;
-        Node clientNode = getBlockManager().getDatanodeManager().getDatanodeByHost(r.clientMachine);
-        if (clientNode == null) {
-          List<String> hosts = new ArrayList<>(1);
-          hosts.add(r.clientMachine);
-          List<String> rName = getBlockManager().getDatanodeManager()
-                  .resolveNetworkLocation(hosts);
-          if (rName != null) {
-            // Able to resolve clientMachine mapping.
-            // Create a temp node to findout the rack local nodes
-            clientNode = new NodeBase(rName.get(0) + NodeBase.PATH_SEPARATOR_STR + clientMachine);
-          }
-        }
-        List<String> favoredNodesList = Arrays.asList(favoredNodes);
-        // choose targets for the new block to be allocated. favored nodes here act as mandatory candidate
-        targets =  getBlockManager().chooseezTarget4NewBlock(dst, r.replication, clientNode,
-                null, r.blockSize, favoredNodesList, r.storagePolicyID);
-        LOG.fatal("targets: " + targets[0].toString());
-        // build up InodeFile and blockInfo
-        checkOperation(OperationCategory.WRITE);
-        writeLock();
-        try {
-          checkOperation(OperationCategory.WRITE);
-          final INode inode;
-          final INodesInPath iip;
-          if (dstFileStatus.getFileId() == HdfsConstants.GRANDFATHER_INODE_ID) {
-            // Older clients may not have given us an inode ID to work with.
-            // In this case, we have to try to resolve the path and hope it
-            // hasn't changed or been deleted since the file was opened for write.
-            iip = dir.getINodesInPath4Write(dst);
-            inode = iip.getLastINode();
-          } else {
-            // Newer clients pass the inode ID, so we can just get the inode directly.
-            inode = dir.getInode(dstFileStatus.getFileId());
-            iip = INodesInPath.fromINode(inode);
-            if (inode != null) {
-              dst = iip.getPath();
-            }
-          }
-          final INodeFile file = checkLease(dst, holder, inode, dstFileStatus.getFileId());
-          commitOrCompleteLastBlock(file, iip,
-                  ExtendedBlock.getLocalBlock(previous));
-          // allocate new block, record block locations in INode.
-          Block newBlock = createNewBlock();
-          newBlock.setNumBytes(srcLocatedBlock.getBlock().getNumBytes());
-          INodesInPath inodesInPath = INodesInPath.fromINode(file);
-          assert hasWriteLock();
-          BlockInfo b;
-          dir.writeLock();
-          try {
-            final INodeFile fileINode = inodesInPath.getLastINode().asFile();
-            Preconditions.checkState(fileINode.isUnderConstruction());
-            // check quota limits and updated space consumed
-            dir.updateCount(inodesInPath, 0, fileINode.getPreferredBlockSize(),
-                    fileINode.getPreferredBlockReplication(), true);
-            // associate new last block for the file
-            BlockInfoUnderConstruction blockInfo =
-                    new BlockInfoUnderConstructionContiguous(
-                            newBlock,
-                            fileINode.getFileReplication(),
-                            BlockUCState.COMMITTED,
-                            targets);
-            Infos = blockInfo;
-            dir.getBlockManager().addBlockCollection(blockInfo, fileINode);
-            fileINode.addBlock(blockInfo);
-            b =  blockInfo;
-
-          } finally {
-            dir.writeUnlock();
-          }
-          NameNode.stateChangeLog.info("BLOCK* allocate " + b + " for " + dst);
-          DatanodeStorageInfo.incrementBlocksScheduled(targets);
-
-          Preconditions.checkArgument(file.isUnderConstruction());
-          getEditLog().logAddBlock(dst, file);
-          long offset = file.computeFileSize();
-          destinationLocatedBlock = FSDirWriteFileOp.makeLocatedBlock(this, newBlock, targets, offset);
-
-        } finally {
-          writeUnlock();
-        }
-        getEditLog().logSync();
-      }
-      // add every src/dst block pairs into list of corresponding DatanodeDescriptor, and wait to be
-      // sent to datanode via heartbeat response
-      for (DatanodeInfo di : srcLocatedBlock.getLocations()) {
-        DatanodeDescriptor dd = getBlockManager().getDatanodeManager().getDatanode(di);
-        dd.ezcopySrclist.add(srcLocatedBlock.getBlock());
-        dd.ezcopyDstlist.add(destinationLocatedBlock.getBlock());
-      }
-      BlockInfo storedBlock;
-      if (Infos instanceof BlockInfoUnderConstruction) {
-        //refresh our copy in case the block got completed in another thread
-        storedBlock = getStoredBlock(Infos);
-      } else {
-        storedBlock = Infos;
-      }
-      BlockCollection bc = storedBlock.getBlockCollection();
-
-      getBlockManager().forceCompleteBlock(bc, (BlockInfoUnderConstruction)storedBlock);
-
-      destinationLocatedBlock.getBlock().setNumBytes(srcLocatedBlock.getBlock().getNumBytes());
-      previous = destinationLocatedBlock.getBlock();
-      previous.setNumBytes(srcLocatedBlock.getBlockSize());
+      DatanodeDescriptor dd = getBlockManager().getDatanodeManager().getDatanode(srcLocatedBlock.getLocations()[(int)(Math.random() * srcLocatedBlock.getLocations().length)]);
+      dd.ezcopySrclist.add(src);
+      dd.ezcopyDstlist.add(dst);
+      dd.ezcopyOffsetlist.add(srcLocatedBlock.getStartOffset());
+      dd.ezcopyLengthlist.add(srcLocatedBlock.getBlock().getNumBytes());
     }
-    final INodeFile file = INodeFile.valueOf(dir.getInode(dstFileStatus.getFileId()), dst);
-    file.toCompleteFile(monotonicNow());
   }
 
   /**

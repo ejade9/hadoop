@@ -227,8 +227,11 @@ public class DatanodeDescriptor extends DatanodeInfo {
   /** A set of blocks to be invalidated by this datanode */
   private final LightWeightHashSet<Block> invalidateBlocks =
       new LightWeightHashSet<>();
-  public final ArrayList<ExtendedBlock> ezcopySrclist = new ArrayList<>();
-  public final ArrayList<ExtendedBlock> ezcopyDstlist = new ArrayList<>();
+  public final ArrayList<String> ezcopySrclist = new ArrayList<>();
+  public final ArrayList<String> ezcopyDstlist = new ArrayList<>();
+  public final ArrayList<Long> ezcopyOffsetlist = new ArrayList<>();
+  public final ArrayList<Long> ezcopyLengthlist = new ArrayList<>();
+
 
   /* Variables for maintaining number of blocks scheduled to be written to
    * this storage. This count is approximate and might be slightly bigger

@@ -87,7 +87,6 @@ public class Ezcopy {
             }
             else
                 isIncluster = false;
-
             // if incluster, remove the hdfs:// prefix and only use path component.
             if (isIncluster) {
                 this.source = new Path(src).makeQualified(srcFs.getUri(), srcFs.getWorkingDirectory()).toUri().getPath();
@@ -95,7 +94,7 @@ public class Ezcopy {
                         .getPath();
             }
             else {
-                this.source = src;
+                this.source = new Path(src).makeQualified(srcFs.getUri(), srcFs.getWorkingDirectory()).toUri().getPath();
                 this.destination = destination;
             }
             this.srcFs = srcFs;

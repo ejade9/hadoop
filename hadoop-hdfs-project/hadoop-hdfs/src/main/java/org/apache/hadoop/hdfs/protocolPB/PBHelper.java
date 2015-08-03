@@ -1018,12 +1018,10 @@ public class PBHelper {
 
     public static EzcopyCommandProto convert(EzcopyCommand cmd) {
         EzcopyCommandProto.Builder builder = EzcopyCommandProto.newBuilder();
-        for (ExtendedBlock b : cmd.srcList) {
-            builder.addSrcList(PBHelper.convert(b));
-        }
-        for (ExtendedBlock b : cmd.dstList) {
-            builder.addDstList(PBHelper.convert(b));
-        }
+        builder.addAllSrcList(cmd.srcList);
+        builder.addAllDstList(cmd.dstList);
+        builder.addAllOffset(cmd.offsetList);
+        builder.addAllLength(cmd.lengthList);
         return builder.build();
     }
 
@@ -1137,15 +1135,11 @@ public class PBHelper {
   }
 
     public static EzcopyCommand convert(EzcopyCommandProto EzcopyCmd) {
-        List<ExtendedBlockProto> src = EzcopyCmd.getSrcListList();
-        List<ExtendedBlockProto> dst = EzcopyCmd.getDstListList();
-        ArrayList<ExtendedBlock> srclist = new ArrayList<>(src.size());
-        for (ExtendedBlockProto ebp : src)
-            srclist.add(PBHelper.convert(ebp));
-        ArrayList<ExtendedBlock> dstlist = new ArrayList<>(dst.size());
-        for (ExtendedBlockProto ebp : dst)
-            dstlist.add(PBHelper.convert(ebp));
-        return new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, srclist, dstlist);
+        List<String> src = EzcopyCmd.getSrcListList();
+        List<String> dst = EzcopyCmd.getDstListList();
+        List<Long> off = EzcopyCmd.getOffsetList();
+        List<Long> len = EzcopyCmd.getLengthList();
+        return new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, src, dst, off, len);
     }
 
   public static BlockCommand convert(BlockCommandProto blkCmd) {

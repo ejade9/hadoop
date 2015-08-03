@@ -59,10 +59,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.URI;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.security.PrivilegedExceptionAction;
@@ -100,10 +97,7 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.DFSUtil;
-import org.apache.hadoop.hdfs.HDFSPolicyProvider;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
+import org.apache.hadoop.hdfs.*;
 import org.apache.hadoop.hdfs.client.BlockReportOptions;
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys;
 import org.apache.hadoop.hdfs.net.DomainPeerServer;
@@ -2830,21 +2824,25 @@ public class DataNode extends ReconfigurableBase
         datanodes, storages);
   }
 
-    public void ezcopy(ExtendedBlock src, ExtendedBlock dst) throws IOException{
-        dst.setNumBytes(src.getNumBytes());
-        getFSDataset().ezcopy(src, dst);
-        FsVolumeSpi v = getFSDataset().getVolume(dst);
+    public void ezcopy(String src, String dst, long off, long len, DFSClient srcdfs, DFSClient dstdfs) throws IOException {
+        System.out.println("xxxx: " + src + '#' + dst + '#' + off + '#' + len);
+        OutputStream out = dstdfs.create(dst + "_" + off, true);
+        InputStream in = srcdfs.open(src);
+        byte buf[] = new byte[(int)len];
+        try {
+            in.read(buf, (int)off, (int)len);//short circuit might trigger
+            out.write(buf, 0, (int)len);
+            out.close();
+            out = null;
+            in.close();
+            in = null;
 
-        metrics.incrBlocksWritten();
-        BPOfferService bpos = blockPoolManager.get(dst.getBlockPoolId());
-        if (bpos != null) {
-            bpos.notifyNamenodeReceivedBlock(dst, DataNode.EMPTY_DEL_HINT, v.getStorageID());
-        } else {
-            LOG.warn("Cannot find BPOfferService for reporting block received for bpid="
-                    + dst.getBlockPoolId());
+        } finally {
+            IOUtils.closeStream(out);
+            IOUtils.closeStream(in);
         }
     }
-  
+
   private static void logRecoverBlock(String who, RecoveringBlock rb) {
     ExtendedBlock block = rb.getBlock();
     DatanodeInfo[] targets = rb.getLocations();
