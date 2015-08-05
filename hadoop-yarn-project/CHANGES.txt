@@ -156,6 +156,8 @@ Release 2.8.0 - UNRELEASED
     YARN-3853. Add docker container runtime support to LinuxContainterExecutor.
     (Sidharta Seethana via vvasudev)
 
+    YARN-3736. Add RMStateStore apis to store and load accepted reservations for
+    failover (adhoot via asuresh)
 
   IMPROVEMENTS
 
@@ -361,6 +363,14 @@ Release 2.8.0 - UNRELEASED
     YARN-3950. Add unique SHELL_ID environment variable to DistributedShell
     (Robert Kanter via jlowe)
 
+    YARN-3965. Add startup timestamp to nodemanager UI (Hong Zhiguo via jlowe)
+
+    YARN-3543. ApplicationReport should be able to tell whether the Application
+    is AM managed or not. (Rohith Sharma K S via xgong)
+
+    YARN-4004. container-executor should print output of docker logs if the docker
+    container exits with non-0 exit status. (Varun Vasudev via xgong)
+
   OPTIMIZATIONS
 
     YARN-3339. TestDockerContainerExecutor should pull a single image and not
@@ -380,6 +390,9 @@ Release 2.8.0 - UNRELEASED
 
     YARN-2768. Avoid cloning Resource in FSAppAttempt#updateDemand.
     (Hong Zhiguo via kasha)
+
+    YARN-3983. Refactored CapacityScheduleri#FiCaSchedulerApp to easier extend
+    container allocation logic. (Wangda Tan via jianhe)
 
   BUG FIXES
 
@@ -710,6 +723,15 @@ Release 2.8.0 - UNRELEASED
     YARN-3919. NPEs' while stopping service after exception during
     CommonNodeLabelsManager#start. (varun saxane via rohithsharmaks)
 
+    YARN-3963. AddNodeLabel on duplicate label addition shows success.
+    (Bibin A Chundatt via wangda)
+
+    YARN-3971. Skip RMNodeLabelsManager#checkRemoveFromClusterNodeLabelsOfQueue 
+    on nodelabel recovery. (Bibin A Chundatt via wangda)
+
+    YARN-433. When RM is catching up with node updates then it should not expire
+    acquired containers. (Xuan Gong via zxu)
+
 Release 2.7.2 - UNRELEASED
 
   INCOMPATIBLE CHANGES
@@ -723,6 +745,9 @@ Release 2.7.2 - UNRELEASED
 
     YARN-3967. Fetch the application report from the AHS if the RM does not know about it.
     (Mit Desai via xgong)
+
+    YARN-3978. Configurably turn off the saving of container info in Generic AHS
+    (Eric Payne via jeagles)
 
   OPTIMIZATIONS
 
@@ -750,6 +775,9 @@ Release 2.7.2 - UNRELEASED
 
     YARN-3925. ContainerLogsUtils#getContainerLogFile fails to read container
     log files from full disks. (zhihai xu via jlowe)
+
+    YARN-3990. AsyncDispatcher may overloaded with RMAppNodeUpdateEvent when
+    Node is connected/disconnected (Bibin A Chundatt via jlowe)
 
 Release 2.7.1 - 2015-07-06 
 

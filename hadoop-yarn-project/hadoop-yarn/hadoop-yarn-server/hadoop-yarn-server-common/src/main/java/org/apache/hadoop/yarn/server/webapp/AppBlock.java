@@ -206,6 +206,7 @@ public class AppBlock extends HtmlBlock {
     }
     overviewTable._("Diagnostics:",
         app.getDiagnosticsInfo() == null ? "" : app.getDiagnosticsInfo());
+    overviewTable._("Unmanaged Application:", app.isUnmanagedApp());
 
     Collection<ApplicationAttemptReport> attempts;
     try {
@@ -266,11 +267,13 @@ public class AppBlock extends HtmlBlock {
             @Override
             public ContainerReport run() throws Exception {
               ContainerReport report = null;
-              try {
-                report = appBaseProt.getContainerReport(request)
-                    .getContainerReport();
-              } catch (ContainerNotFoundException ex) {
-                LOG.warn(ex.getMessage());
+              if (request.getContainerId() != null) {
+                  try {
+                    report = appBaseProt.getContainerReport(request)
+                        .getContainerReport();
+                  } catch (ContainerNotFoundException ex) {
+                    LOG.warn(ex.getMessage());
+                  }
               }
               return report;
             }
