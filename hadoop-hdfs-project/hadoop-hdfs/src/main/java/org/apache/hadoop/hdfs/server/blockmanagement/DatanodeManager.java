@@ -1470,14 +1470,18 @@ public class DatanodeManager {
         }
           // check ezcopy
           final int EZCOPY_THRESHOLD = 1000;
-          if (nodeinfo.ezcopySrclist.size() > 0) {
+          if (nodeinfo.ezcopySrclist.size() > 0 || nodeinfo.ezcopyConcatlist.size() > 0) {
               assert nodeinfo.ezcopyDstlist.size() == nodeinfo.ezcopySrclist.size();
               if (nodeinfo.ezcopySrclist.size() < EZCOPY_THRESHOLD) {
-                  cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, nodeinfo.ezcopySrclist, nodeinfo.ezcopyDstlist, nodeinfo.ezcopyOffsetlist, nodeinfo.ezcopyLengthlist));
+                  cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, nodeinfo.ezcopySrclist, nodeinfo.ezcopyDstlist, nodeinfo.ezcopyOffsetlist, nodeinfo.ezcopyLengthlist,
+                          nodeinfo.ezcopyConcatlist, nodeinfo.ezcopyConcatnum, nodeinfo.ezcopyBlocksize));
                   nodeinfo.ezcopySrclist.clear();
                   nodeinfo.ezcopyDstlist.clear();
                   nodeinfo.ezcopyOffsetlist.clear();
                   nodeinfo.ezcopyLengthlist.clear();
+                  nodeinfo.ezcopyConcatlist.clear();
+                  nodeinfo.ezcopyConcatnum.clear();
+                  nodeinfo.ezcopyBlocksize.clear();
               }
               else {
                   ArrayList<String> s = new ArrayList<>();
@@ -1490,7 +1494,10 @@ public class DatanodeManager {
                       o.add(nodeinfo.ezcopyOffsetlist.remove(0));
                       l.add(nodeinfo.ezcopyLengthlist.remove(0));
                   }
-                  cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, s, d, o, l));
+                  cmds.add(new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, s, d, o, l, nodeinfo.ezcopyConcatlist, nodeinfo.ezcopyConcatnum, nodeinfo.ezcopyBlocksize));
+                  nodeinfo.ezcopyConcatlist.clear();
+                  nodeinfo.ezcopyConcatnum.clear();
+                  nodeinfo.ezcopyBlocksize.clear();
               }
           }
         blockManager.addKeyUpdateCommand(cmds, nodeinfo);

@@ -231,6 +231,9 @@ public class DatanodeDescriptor extends DatanodeInfo {
   public final ArrayList<String> ezcopyDstlist = new ArrayList<>();
   public final ArrayList<Long> ezcopyOffsetlist = new ArrayList<>();
   public final ArrayList<Long> ezcopyLengthlist = new ArrayList<>();
+  public final ArrayList<String> ezcopyConcatlist = new ArrayList<>();
+  public final ArrayList<Long> ezcopyConcatnum = new ArrayList<>();
+  public final ArrayList<Long> ezcopyBlocksize = new ArrayList<>();
 
 
   /* Variables for maintaining number of blocks scheduled to be written to

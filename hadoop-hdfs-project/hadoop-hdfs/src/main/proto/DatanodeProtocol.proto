@@ -109,6 +109,9 @@ message EzcopyCommandProto {
   repeated string dstList = 2;
   repeated uint64 offset = 3;
   repeated uint64 length = 4;
+  repeated string concatList = 5;
+  repeated uint64 concatnum = 6;
+  repeated uint64 blocksize = 7;
 }
 
 /**

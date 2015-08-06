@@ -1671,13 +1671,21 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     }
 
     LocatedBlocks srcLocatedBlks = getBlockLocations(clientMachine, src, 0, Long.MAX_VALUE);
+    int concatnum = 0;
     for (LocatedBlock srcLocatedBlock : srcLocatedBlks.getLocatedBlocks()) {
       DatanodeDescriptor dd = getBlockManager().getDatanodeManager().getDatanode(srcLocatedBlock.getLocations()[(int)(Math.random() * srcLocatedBlock.getLocations().length)]);
       dd.ezcopySrclist.add(src);
       dd.ezcopyDstlist.add(dst);
       dd.ezcopyOffsetlist.add(srcLocatedBlock.getStartOffset());
       dd.ezcopyLengthlist.add(srcLocatedBlock.getBlock().getNumBytes());
+      concatnum++;
     }
+    // this following part should wait all block-files finished in other methods
+    DatanodeDescriptor dd = getBlockManager().getDatanodeManager().getDatanode(srcLocatedBlks.getLocatedBlocks().get(0).getLocations()
+            [(int)(Math.random() * srcLocatedBlks.getLocatedBlocks().get(0).getLocations().length)]);
+    dd.ezcopyConcatlist.add(dst);
+    dd.ezcopyConcatnum.add((long)concatnum);
+    dd.ezcopyBlocksize.add(srcLocatedBlks.getLocatedBlocks().get(0).getBlockSize());
   }
 
   /**

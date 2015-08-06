@@ -1022,6 +1022,9 @@ public class PBHelper {
         builder.addAllDstList(cmd.dstList);
         builder.addAllOffset(cmd.offsetList);
         builder.addAllLength(cmd.lengthList);
+        builder.addAllConcatList(cmd.concatList);
+        builder.addAllConcatnum(cmd.concatnum);
+        builder.addAllBlocksize(cmd.blocksize);
         return builder.build();
     }
 
@@ -1139,7 +1142,10 @@ public class PBHelper {
         List<String> dst = EzcopyCmd.getDstListList();
         List<Long> off = EzcopyCmd.getOffsetList();
         List<Long> len = EzcopyCmd.getLengthList();
-        return new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, src, dst, off, len);
+        List<String> conl = EzcopyCmd.getConcatListList();
+        List<Long> con = EzcopyCmd.getConcatnumList();
+        List<Long> blk = EzcopyCmd.getBlocksizeList();
+        return new EzcopyCommand(DatanodeProtocol.DNA_EZCOPY, src, dst, off, len, conl, con, blk);
     }
 
   public static BlockCommand convert(BlockCommandProto blkCmd) {

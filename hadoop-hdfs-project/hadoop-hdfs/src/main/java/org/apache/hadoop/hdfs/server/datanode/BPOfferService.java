@@ -758,8 +758,19 @@ class BPOfferService {
           dn.ezcopy(src.get(i), dst.get(i), off.get(i), len.get(i), srcdfs, dstdfs);
         }
         dstdfs.closeAllFilesBeingWritten(false);
-        dstdfs.close();
         srcdfs.close();
+        ArrayList<String> concatlist = ((EzcopyCommand) cmd).concatList;
+        ArrayList<Long> num = ((EzcopyCommand) cmd).concatnum;
+        ArrayList<Long> blk = ((EzcopyCommand) cmd).blocksize;
+        for (int i = 0; i < concatlist.size(); ++i) {
+          String concatsrcs[] = new String[num.get(i).intValue()];
+          String concattar = concatlist.get(i);
+          for (int j = 0 ; j < num.get(i).intValue(); ++j) {
+            concatsrcs[j] = concattar + "_" + blk.get(i) * j;
+          }
+          dstdfs.concat(concattar, concatsrcs);
+        }
+        dstdfs.close();
         break;
     default:
       LOG.warn("Unknown DatanodeCommand action: " + cmd.getAction());
