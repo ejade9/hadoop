@@ -196,15 +196,7 @@ import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSecretManager;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSecretManager.SecretManagerState;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockCollection;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockIdManager;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoContiguousUnderConstruction;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockManager;
-import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
-import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
-import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeStatistics;
-import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeStorageInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.*;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.RollingUpgradeStartupOption;
@@ -1690,7 +1682,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     ExtendedBlock previous = null;
     LocatedBlock destinationLocatedBlock;
     for (LocatedBlock srcLocatedBlock : srcLocatedBlks.getLocatedBlocks()) {
-      BlockInfoUnderConstruction Infos = null;
+      BlockInfoContiguousUnderConstruction Infos = null;
       String[] favoredNodes = new String[srcLocatedBlock.getLocations().length];
       for (int i = 0; i < srcLocatedBlock.getLocations().length; ++i) {
         favoredNodes[i] = srcLocatedBlock.getLocations()[i].getHostName();
@@ -1769,8 +1761,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             dir.updateCount(inodesInPath, 0, fileINode.getPreferredBlockSize(),
                     fileINode.getPreferredBlockReplication(), true);
             // associate new last block for the file
-            BlockInfoUnderConstruction blockInfo =
-                    new BlockInfoUnderConstructionContiguous(
+            BlockInfoContiguousUnderConstruction blockInfo =
+                    new BlockInfoContiguousUnderConstruction(
                             newBlock,
                             fileINode.getFileReplication(),
                             BlockUCState.COMMITTED,
@@ -1804,7 +1796,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
         dd.ezcopyDstlist.add(destinationLocatedBlock.getBlock());
       }
       BlockInfo storedBlock;
-      if (Infos instanceof BlockInfoUnderConstruction) {
+      if (Infos instanceof BlockInfoContiguousUnderConstruction) {
         //refresh our copy in case the block got completed in another thread
         storedBlock = getStoredBlock(Infos);
       } else {
@@ -1812,7 +1804,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       }
       BlockCollection bc = storedBlock.getBlockCollection();
 
-      getBlockManager().forceCompleteBlock(bc, (BlockInfoUnderConstruction)storedBlock);
+      getBlockManager().forceCompleteBlock(bc, (BlockInfoContiguousUnderConstruction)storedBlock);
 
       destinationLocatedBlock.getBlock().setNumBytes(srcLocatedBlock.getBlock().getNumBytes());
       previous = destinationLocatedBlock.getBlock();
