@@ -728,7 +728,7 @@ class BPOfferService {
       }
       break;
       case DatanodeProtocol.DNA_EZCOPY:
-        LOG.info("DatanodeCommand action: DNA_EZCOPY");// need change to info later
+        LOG.info("DatanodeCommand action: DNA_EZCOPY");
         ArrayList<String> src = ((EzcopyCommand) cmd).srcList;
         ArrayList<String> dst = ((EzcopyCommand) cmd).dstList;
         ArrayList<Long> off = ((EzcopyCommand) cmd).offsetList;
@@ -739,13 +739,11 @@ class BPOfferService {
         DFSClient dstdfs;
         URI srcuri = (new Path(src.get(0)).getFileSystem(defaultConf)).getUri();
         URI dsturi = (new Path(dst.get(0)).getFileSystem(defaultConf)).getUri();
-        LOG.fatal(srcuri.getAuthority() + '#' + dsturi.getAuthority());
         if (srcuri.getAuthority() != null)
           srcdfs = new DFSClient(srcuri, defaultConf);
         else
           try {
             String dfshost = "hdfs://" + actor.nnAddr.getAddress().getHostName() + ':' + actor.nnAddr.getPort();
-            LOG.fatal(dfshost);
             srcdfs = new DFSClient(new URI(dfshost), defaultConf);
           } catch (URISyntaxException e) {
             e.printStackTrace();
